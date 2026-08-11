@@ -2,7 +2,7 @@
 
 ## What this project is
 
-`job-sync` — an automated job-alert pipeline (scheduled script, **not** a server and **not** an agent). Every run: fetch remote jobs from 6 sources → normalize to `Job` → keyword filter → SQLite dedupe → email digest of new matches → exit. Product spec lives in `PRD.md`; keep it updated when scope changes.
+`job-sync` — an automated job-alert pipeline (scheduled script, **not** a server and **not** an agent). Every run: fetch remote jobs from 6 sources → normalize to `Job` → keyword filter → SQLite dedupe → email digest of new matches → exit. Product spec lives in `PRD.md`; keep it updated when scope changes. Build order lives in `IMPLEMENTATION_PLAN.md` — when completing a step, flip its 🔲 to ✅ there.
 
 ## Commands
 
@@ -29,6 +29,6 @@ There is no test suite yet. Verify changes by running `npm start` and reading th
 
 ## Current state / roadmap
 
-- Implemented: pipeline skeleton, Remotive + RemoteOK fetchers, rules filter, dedupe, email-or-console digest, Actions cron workflow.
-- Stubs (return `[]`, marked TODO): weworkremotely, jobicy, adzuna (needs `ADZUNA_APP_ID/KEY`), jsearch (needs `RAPIDAPI_KEY`).
+- Implemented: pipeline skeleton, all 6 fetchers, rules filter, dedupe, email-or-console digest, Actions cron workflow. Dedupe is delivery-safe: `selectNewJobs()` is read-only; `markSeen()` runs only after the digest sends — keep that ordering.
+- Key-gated (skip themselves until env is set): adzuna (`ADZUNA_APP_ID/KEY`), jsearch (`RAPIDAPI_KEY`; also self-limits to UTC hours divisible by 4, `JSEARCH_FORCE=1` to bypass).
 - Planned (PRD M3): one LLM classification step (Claude Haiku) inside `filter.ts` for experience level (3–4 yrs) and true-remote check — a fixed pipeline step, not agentic behavior.

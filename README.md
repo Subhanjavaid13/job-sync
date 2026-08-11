@@ -14,12 +14,12 @@ fetchers (×6) → normalize → filter (rules) → dedupe (SQLite) → email di
 
 | Source | Status | Access |
 |---|---|---|
-| Remotive | ✅ implemented | free public API |
-| RemoteOK | ✅ implemented | free public JSON feed |
-| We Work Remotely | 🔲 stub | free RSS |
-| Jobicy | 🔲 stub | free public API |
-| Adzuna | 🔲 stub | free API — create keys at developer.adzuna.com |
-| JSearch (RapidAPI) | 🔲 stub | free tier — subscribe on rapidapi.com |
+| Remotive | ✅ live | free public API |
+| RemoteOK | ✅ live | free public JSON feed |
+| We Work Remotely | ✅ live | free RSS |
+| Jobicy | ✅ live | free public API |
+| Adzuna | ✅ code done — needs `ADZUNA_APP_ID/KEY` | free keys at developer.adzuna.com |
+| JSearch (RapidAPI) | ✅ code done — needs `RAPIDAPI_KEY` | free tier on rapidapi.com (fires every 4th run to respect the ~200 req/mo cap) |
 
 ## Quick start
 
@@ -68,8 +68,8 @@ src/
   fetchers/
     index.ts          fetcher registry
     remotive.ts       reference implementation
-    remoteok.ts       implemented
-    weworkremotely.ts jobicy.ts  adzuna.ts  jsearch.ts   (stubs, TODO)
+    remoteok.ts  weworkremotely.ts  jobicy.ts   implemented
+    adzuna.ts  jsearch.ts   implemented, key-gated
   pipeline/
     filter.ts         keyword rules (LLM step planned — see PRD M3)
     dedupe.ts         SQLite seen-jobs store, 2-level dedupe
@@ -78,5 +78,7 @@ src/
 
 ## Roadmap
 
-- **M2** — implement the 4 stub fetchers, go live on Actions cron.
-- **M3** — LLM classification (Claude Haiku) for experience level + true-remote check.
+Step-by-step build order with done-checks: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) (6 parts / 15 steps; Part 0 is already done).
+
+- **M2** — implement the 4 stub fetchers, go live on Actions cron (plan Parts 2–3).
+- **M3** — LLM classification (Claude Haiku) for experience level + true-remote check (plan Part 4).

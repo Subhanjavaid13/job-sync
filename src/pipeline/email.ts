@@ -20,7 +20,8 @@ function digestHtml(jobs: Job[]): string {
 export async function sendDigest(jobs: Job[]): Promise<void> {
   const { smtpHost, smtpPort, smtpUser, smtpPass, to, from } = config.email;
 
-  if (!smtpHost || !to) {
+  // "YOUR_..." = untouched .env placeholder — treat as unconfigured.
+  if (!smtpHost || !to || !smtpPass || smtpPass.startsWith('YOUR_')) {
     console.log('[job-sync] SMTP not configured — printing digest instead of emailing:');
     for (const j of jobs) {
       console.log(`  • ${j.title} — ${j.company} (${j.source}) ${j.url}`);

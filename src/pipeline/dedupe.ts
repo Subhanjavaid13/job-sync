@@ -12,11 +12,7 @@ function companyTitleKey(job: Job): string {
     .trim();
 }
 
-/**
- * Returns only jobs never seen before (PRD FR4) and records them as seen.
- * Two dedupe levels: exact id, and cross-source company+title.
- */
-export function keepNewJobs(jobs: Job[]): Job[] {
+function openDb(): DatabaseSync {
   mkdirSync(dirname(config.dbPath), { recursive: true });
   const db = new DatabaseSync(config.dbPath);
   db.exec(`
@@ -27,21 +23,41 @@ export function keepNewJobs(jobs: Job[]): Job[] {
     );
     CREATE INDEX IF NOT EXISTS idx_company_title ON seen_jobs (company_title_key);
   `);
+  return db;
+}
 
+/**
+ * Returns only jobs never seen before (PRD FR4). Read-only — call markSeen()
+ * AFTER the digest is delivered, so a failed send retries next run instead of
+ * silently losing jobs forever.
+ */
+export function selectNewJobs(jobs: Job[]): Job[] {
+  const db = openDb();
   const byId = db.prepare('SELECT 1 FROM seen_jobs WHERE id = ?');
   const byKey = db.prepare('SELECT 1 FROM seen_jobs WHERE company_title_key = ?');
-  const insert = db.prepare(
-    'INSERT OR IGNORE INTO seen_jobs (id, company_title_key, first_seen) VALUES (?, ?, ?)',
-  );
 
   const fresh: Job[] = [];
+  const keysThisRun = new Set<string>();
   for (const job of jobs) {
     const key = companyTitleKey(job);
-    if (byId.get(job.id) || byKey.get(key)) continue;
-    insert.run(job.id, key, new Date().toISOString());
+    if (byId.get(job.id) || byKey.get(key) || keysThisRun.has(key)) continue;
+    keysThisRun.add(key); // cross-source duplicate within the same run
     fresh.push(job);
   }
 
   db.close();
   return fresh;
+}
+
+/** Records jobs as seen. Call only after the digest was delivered. */
+export function markSeen(jobs: Job[]): void {
+  const db = openDb();
+  const insert = db.prepare(
+    'INSERT OR IGNORE INTO seen_jobs (id, company_title_key, first_seen) VALUES (?, ?, ?)',
+  );
+  const now = new Date().toISOString();
+  for (const job of jobs) {
+    insert.run(job.id, companyTitleKey(job), now);
+  }
+  db.close();
 }
