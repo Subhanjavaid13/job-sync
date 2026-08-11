@@ -1,0 +1,6 @@
+node_modules/
+.env
+*.log
+PRD.md
+# NOTE: data/ is intentionally NOT ignored — data/jobs.db is the dedupe
+# persistence layer that the GitHub Actions workflow commits back each run.

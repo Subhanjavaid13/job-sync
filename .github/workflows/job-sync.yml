@@ -1,0 +1,47 @@
+name: job-sync
+
+on:
+  schedule:
+    - cron: '0 */2 * * *' # every 2 hours (GitHub cron may drift 5–15 min — fine here)
+  workflow_dispatch: {} # manual "Run workflow" button
+
+permissions:
+  contents: write # needed to commit the updated dedupe DB back
+
+concurrency:
+  group: job-sync
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run pipeline
+        run: npm start
+        env:
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+
+      - name: Persist dedupe DB
+        run: |
+          git config user.name "job-sync-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/jobs.db
+          git diff --cached --quiet || git commit -m "chore: update dedupe DB [skip ci]"
+          git push
