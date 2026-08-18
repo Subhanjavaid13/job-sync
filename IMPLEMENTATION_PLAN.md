@@ -68,7 +68,7 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 
 - ✅ **7.1 Rich persistence** — `seen_jobs` now stores title/company/url/source/salary/location/score/emailed (additive migration in `src/pipeline/db.ts`); new `runs` table records every pipeline execution (local and cloud).
 - ✅ **7.2 API server** — `src/ui/server.ts`: overview stats, job search/filter/sort, leads CRUD, and a run trigger that spawns the real pipeline and streams its log.
-- ✅ **7.3 Interface** — `src/ui/page.ts`: Overview (stat tiles + 14-day sparkline + per-source bar list + runs table), Jobs (search, source filter, newest/best-match sort), Leads (workflow board), Run (button + live log). Zero frameworks/CDNs; external text rendered via `textContent` only; custom warm-paper/pine palette with every text/mark pair contrast-validated (13/13 ≥ WCAG thresholds).
+- ✅ **7.3 Interface** — `src/ui/page.ts`: Overview (stat tiles + 14-day sparkline + per-source bar list + runs table), Jobs (search, source filter, newest/best-match sort), Leads (workflow board), Run (button + live log). Zero frameworks/CDNs; external text rendered via `textContent` only. Restyled 2026-08-18 to a **blue/white professional theme** (indigo `#4247DA` on white cards over a soft blue gradient, pill buttons, elevated cards) — every text/mark pair re-validated for WCAG contrast (15/15 pass).
 - ✅ **7.4 Run-from-UI** — "Run now" executes `npm start` as a child process; concurrent runs blocked; overview refreshes when it finishes.
 
 ## Part 8 — Leads generator (portal ✅, sources 🔲 — see LEADS_PLAN.md)

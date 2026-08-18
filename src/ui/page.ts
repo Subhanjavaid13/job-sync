@@ -3,8 +3,9 @@
  * build step. All dynamic data is inserted with textContent (never innerHTML)
  * because job titles/companies come from external APIs.
  *
- * Palette: warm paper + deep pine accent. Every text/mark pair was validated
- * for WCAG contrast (see scripts note in IMPLEMENTATION_PLAN Part 7).
+ * Palette: professional blue/white — indigo primary (#4247DA) on white cards
+ * over a soft blue gradient page. Every text/mark pair was validated for WCAG
+ * contrast (see IMPLEMENTATION_PLAN Part 7).
  */
 export const pageHtml = `<!doctype html>
 <html lang="en">
@@ -12,33 +13,37 @@ export const pageHtml = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>job-sync dashboard</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%2319584D'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%234247DA'/%3E%3C/svg%3E">
 <style>
   :root {
-    --paper: #F6F3EC;
-    --card: #FCFBF7;
-    --ink: #1B1811;
-    --secondary: #575246;
-    --muted: #8A8374;
-    --hairline: #E5E0D2;
-    --baseline: #C9C4B5;
-    --pine: #19584D;
-    --pine-dark: #14453C;
-    --pine-soft: #E3EDE8;
-    --amber-bg: #F4E7C8;
-    --amber-ink: #6B4A00;
-    --good: #2C6E31;
-    --critical: #B3372B;
+    /* Blue/white professional palette — every text/mark pair WCAG-validated. */
+    --page: #F4F7FE;
+    --page-tint: #E9EFFF;
+    --card: #FFFFFF;
+    --ink: #131A3C;
+    --secondary: #454D75;
+    --muted: #6E7694;
+    --hairline: #E3E8F7;
+    --baseline: #C6CDE9;
+    --primary: #4247DA;
+    --primary-dark: #3238BD;
+    --primary-soft: #EBEEFE;
+    --amber-bg: #FDF0D2;
+    --amber-ink: #75510A;
+    --good: #1F7A33;
+    --critical: #C4362E;
     --running: #8A5F00;
-    --term-bg: #201D16;
-    --term-ink: #E8E2D4;
+    --term-bg: #131A3C;
+    --term-ink: #DEE4F8;
+    --shadow: 0 1px 2px rgba(19, 26, 60, .05), 0 6px 20px rgba(19, 26, 60, .06);
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; background: var(--paper); color: var(--ink);
+    margin: 0; color: var(--ink);
+    background: var(--page) linear-gradient(180deg, var(--page-tint) 0%, var(--page) 360px) no-repeat fixed;
     font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
   }
-  a { color: var(--pine); text-decoration: none; }
+  a { color: var(--primary); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
   header {
@@ -50,7 +55,7 @@ export const pageHtml = `<!doctype html>
     display: flex; align-items: center; gap: 22px; height: 54px;
   }
   .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 15px; }
-  .brand-dot { width: 14px; height: 14px; border-radius: 4px; background: var(--pine); }
+  .brand-dot { width: 15px; height: 15px; border-radius: 5px; background: linear-gradient(135deg, #4247DA 20%, #7A86F2); }
   nav { display: flex; gap: 4px; flex: 1; }
   nav button {
     appearance: none; border: 0; background: none; cursor: pointer;
@@ -58,20 +63,20 @@ export const pageHtml = `<!doctype html>
     border-bottom: 2px solid transparent;
   }
   nav button:hover { color: var(--ink); }
-  nav button[aria-current="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--pine); }
+  nav button[aria-current="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--primary); }
   nav button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 2px solid var(--pine); outline-offset: 2px;
+    outline: 2px solid var(--primary); outline-offset: 2px;
   }
 
   .btn {
     appearance: none; cursor: pointer; font: inherit; font-weight: 600;
-    border-radius: 8px; padding: 8px 14px; border: 1px solid transparent;
+    border-radius: 999px; padding: 8px 18px; border: 1.5px solid transparent;
   }
-  .btn-primary { background: var(--pine); color: #fff; }
-  .btn-primary:hover { background: var(--pine-dark); }
-  .btn-primary[disabled] { opacity: .55; cursor: not-allowed; }
-  .btn-ghost { background: var(--card); color: var(--ink); border-color: var(--hairline); }
-  .btn-ghost:hover { border-color: var(--baseline); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(66, 71, 218, .28); }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary[disabled] { opacity: .55; cursor: not-allowed; box-shadow: none; }
+  .btn-ghost { background: var(--card); color: var(--primary); border-color: var(--primary); }
+  .btn-ghost:hover { background: var(--primary-soft); }
 
   main { max-width: 1100px; margin: 0 auto; padding: 26px 24px 60px; }
   section[hidden] { display: none; }
@@ -79,7 +84,7 @@ export const pageHtml = `<!doctype html>
   .cards { display: grid; gap: 16px; }
   .card {
     background: var(--card); border: 1px solid var(--hairline);
-    border-radius: 10px; padding: 20px;
+    border-radius: 14px; padding: 20px; box-shadow: var(--shadow);
   }
   .card h2 { margin: 0 0 2px; font-size: 14.5px; font-weight: 650; }
   .card .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
@@ -93,10 +98,10 @@ export const pageHtml = `<!doctype html>
 
   /* Bar list (single series → single hue) */
   .bar-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; border-radius: 6px; }
-  .bar-row:hover { background: var(--paper); }
+  .bar-row:hover { background: var(--page); }
   .bar-label { width: 150px; flex: none; color: var(--secondary); text-transform: capitalize; }
   .bar-track { flex: 1; display: flex; align-items: center; border-left: 1px solid var(--baseline); padding-left: 2px; min-height: 20px; }
-  .bar { height: 16px; background: var(--pine); border-radius: 0 4px 4px 0; flex: none; min-width: 2px; }
+  .bar { height: 16px; background: var(--primary); border-radius: 0 4px 4px 0; flex: none; min-width: 2px; }
   .bar-row:hover .bar { filter: brightness(1.18); }
   .bar-value { margin-left: 8px; font-variant-numeric: tabular-nums; color: var(--ink); font-size: 13px; }
 
@@ -104,12 +109,12 @@ export const pageHtml = `<!doctype html>
   th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; padding: 6px 10px; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
-  tbody tr:hover { background: var(--paper); }
+  tbody tr:hover { background: var(--page); }
   .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
-  .chip-source { background: var(--pine-soft); color: var(--pine); font-weight: 600; }
-  .chip-score { background: var(--amber-bg); color: var(--amber-ink); }
+  .chip-source { background: var(--primary-soft); color: var(--primary-dark); font-weight: 600; }
+  .chip-score { background: var(--primary-soft); color: var(--primary-dark); }
   .chip-salary { background: var(--amber-bg); color: var(--amber-ink); font-weight: 600; }
   .st-ok { color: var(--good); } .st-failed { color: var(--critical); } .st-running { color: var(--running); }
   .chip-sample { border: 1px dashed var(--baseline); color: var(--muted); background: none; font-weight: 600; letter-spacing: .04em; }
@@ -117,15 +122,16 @@ export const pageHtml = `<!doctype html>
   .filters { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   input[type="search"], select {
     font: inherit; color: var(--ink); background: var(--card);
-    border: 1px solid var(--hairline); border-radius: 8px; padding: 7px 10px;
+    border: 1px solid var(--hairline); border-radius: 10px; padding: 7px 12px;
   }
+  input[type="search"]:hover, select:hover { border-color: var(--baseline); }
   input[type="search"] { width: 240px; }
 
   .empty { color: var(--muted); padding: 26px 0; text-align: center; }
 
   /* Leads board */
   .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 12px; align-items: start; }
-  .col { background: var(--paper); border: 1px solid var(--hairline); border-radius: 10px; padding: 10px; }
+  .col { background: var(--page); border: 1px solid var(--hairline); border-radius: 10px; padding: 10px; }
   .col h3 { margin: 2px 4px 10px; font-size: 12.5px; font-weight: 650; color: var(--secondary); display: flex; justify-content: space-between; }
   .col h3 .count { color: var(--muted); font-weight: 500; }
   .lead { background: var(--card); border: 1px solid var(--hairline); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
@@ -148,7 +154,7 @@ export const pageHtml = `<!doctype html>
   }
 
   .term {
-    background: var(--term-bg); color: var(--term-ink); border-radius: 10px;
+    background: var(--term-bg); color: var(--term-ink); border-radius: 12px;
     padding: 14px 16px; font: 12px/1.6 ui-monospace, Consolas, monospace;
     max-height: 420px; overflow: auto; white-space: pre-wrap; word-break: break-word;
   }
@@ -362,7 +368,7 @@ export const pageHtml = `<!doctype html>
     var line = document.createElementNS(ns, 'polyline');
     line.setAttribute('points', pts.join(' '));
     line.setAttribute('fill', 'none');
-    line.setAttribute('stroke', '#C9C4B5');
+    line.setAttribute('stroke', '#C6CDE9');
     line.setAttribute('stroke-width', '2');
     line.setAttribute('stroke-linecap', 'round');
     line.setAttribute('stroke-linejoin', 'round');
@@ -370,7 +376,7 @@ export const pageHtml = `<!doctype html>
     var last = pts[pts.length - 1].split(',');
     var dot = document.createElementNS(ns, 'circle');
     dot.setAttribute('cx', last[0]); dot.setAttribute('cy', last[1]); dot.setAttribute('r', '3.5');
-    dot.setAttribute('fill', '#19584D'); dot.setAttribute('stroke', '#FCFBF7'); dot.setAttribute('stroke-width', '2');
+    dot.setAttribute('fill', '#4247DA'); dot.setAttribute('stroke', '#FFFFFF'); dot.setAttribute('stroke-width', '2');
     svg.appendChild(dot);
   }
 
