@@ -78,6 +78,13 @@ export async function sendDigest(jobs: Job[]): Promise<void> {
 
   // "YOUR_..." = untouched .env placeholder — treat as unconfigured.
   if (!smtpHost || !to || !smtpPass || smtpPass.startsWith('YOUR_')) {
+    // In CI, unconfigured SMTP must FAIL the run: succeeding here would mark
+    // the jobs seen without anyone receiving them — silently lost forever.
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      throw new Error(
+        'SMTP secrets not configured in GitHub Actions — refusing to mark jobs seen without delivering. Add the repository secrets (IMPLEMENTATION_PLAN step 3.2).',
+      );
+    }
     console.log('[job-sync] SMTP not configured — printing digest instead of emailing:');
     console.log(digestText(jobs));
     return;

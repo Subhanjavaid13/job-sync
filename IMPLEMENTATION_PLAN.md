@@ -41,7 +41,7 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 ## Part 3 — Cloud deployment (🔲 3 steps, ~1 hour)
 
 - ✅ **3.1 Push to GitHub** — pushed to `Subhanjavaid13/job-sync`. Note: `.gitignore` excludes `PRD.md` (stays local by choice); `data/` must stay tracked (it is the persistence layer).
-- 🔲 **3.2 Add repository secrets** — every value from `.env` (Settings → Secrets and variables → Actions), names exactly as in [.github/workflows/job-sync.yml](.github/workflows/job-sync.yml).
+- 🔲 **3.2 Add repository secrets** — every value from `.env` (Settings → Secrets and variables → Actions), names exactly as in [.github/workflows/job-sync.yml](.github/workflows/job-sync.yml). Until these exist, cloud runs with new matches **fail on purpose** (SMTP guard) rather than silently marking jobs seen without emailing them.
 - 🔲 **3.3 First cloud run** — trigger via the *Run workflow* button. **Done when:** the run is green, a digest arrives, and the workflow pushed a `chore: update dedupe DB` commit. After that the 2-hour cron needs nothing from you.
 
 ## Part 4 — Filter quality: keyword tuning (🔲 ongoing)
