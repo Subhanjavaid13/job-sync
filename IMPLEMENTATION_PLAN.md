@@ -59,7 +59,7 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 ## Part 6 — Future ideas (🔲 backlog, no commitment)
 
 - 🔲 **6.1 Targeted company boards** — Greenhouse/Lever public JSON of agencies known to hire Shopify devs.
-- 🔲 **6.2 LLM match scoring** — rank digest items by fit instead of boolean filtering.
+- 🔲 **6.2 Keyword match scoring** — weight keywords (title hit > tag hit > description hit) and sort the digest by score instead of boolean filtering.
 - 🔲 **6.3 Web dashboard** — only if email ever stops being enough.
 
 ---

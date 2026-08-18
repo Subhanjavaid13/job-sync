@@ -71,7 +71,7 @@ src/
     remoteok.ts  weworkremotely.ts  jobicy.ts   implemented
     adzuna.ts  jsearch.ts   implemented, key-gated
   pipeline/
-    filter.ts         keyword rules (LLM step planned — see PRD M3)
+    filter.ts         keyword rules (include/exclude + remote check)
     dedupe.ts         SQLite seen-jobs store, 2-level dedupe
     email.ts          digest via nodemailer, console fallback
 ```
