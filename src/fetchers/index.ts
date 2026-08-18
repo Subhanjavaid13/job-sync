@@ -5,6 +5,7 @@ import { weworkremotely } from './weworkremotely.js';
 import { jobicy } from './jobicy.js';
 import { adzuna } from './adzuna.js';
 import { jsearch } from './jsearch.js';
+import { boards } from './boards.js';
 
 export const fetchers: Fetcher[] = [
   remotive,
@@ -13,4 +14,5 @@ export const fetchers: Fetcher[] = [
   jobicy,
   adzuna,
   jsearch,
+  boards,
 ];

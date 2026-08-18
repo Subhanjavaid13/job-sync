@@ -73,7 +73,7 @@ function digestText(jobs: Job[]): string {
 }
 
 /** Sends one digest per run (PRD FR5). Falls back to console when SMTP is unconfigured. */
-export async function sendDigest(jobs: Job[]): Promise<void> {
+export async function sendDigest(jobs: Job[]): Promise<'emailed' | 'console'> {
   const { smtpHost, smtpPort, smtpUser, smtpPass, to, from } = config.email;
 
   // "YOUR_..." = untouched .env placeholder — treat as unconfigured.
@@ -87,7 +87,7 @@ export async function sendDigest(jobs: Job[]): Promise<void> {
     }
     console.log('[job-sync] SMTP not configured — printing digest instead of emailing:');
     console.log(digestText(jobs));
-    return;
+    return 'console';
   }
 
   const transport = nodemailer.createTransport({
@@ -105,4 +105,5 @@ export async function sendDigest(jobs: Job[]): Promise<void> {
     html: digestHtml(jobs),
   });
   console.log(`[job-sync] digest emailed to ${to}`);
+  return 'emailed';
 }

@@ -9,6 +9,8 @@
   },
   "scripts": {
     "start": "tsx src/index.ts",
+    "leads": "tsx src/leads/index.ts",
+    "ui": "tsx src/ui/server.ts",
     "notify:failure": "tsx scripts/notify-failure.ts",
     "typecheck": "tsc --noEmit"
   },

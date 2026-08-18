@@ -38,6 +38,12 @@ jobs:
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
 
+      - name: Run leads pipeline
+        # Self-limits to UTC hour % 6 == 0 (~4×/day). Failures here must never
+        # block persisting the jobs dedupe state below — hence continue-on-error.
+        continue-on-error: true
+        run: npm run leads
+
       - name: Email failure alert
         if: failure()
         run: npm run notify:failure
