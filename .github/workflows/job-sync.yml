@@ -38,7 +38,19 @@ jobs:
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
 
+      - name: Email failure alert
+        if: failure()
+        run: npm run notify:failure
+        env:
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+
       - name: Persist dedupe DB
+        if: success()
         run: |
           git config user.name "job-sync-bot"
           git config user.email "actions@users.noreply.github.com"

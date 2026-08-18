@@ -78,7 +78,6 @@ src/
 
 ## Roadmap
 
-Step-by-step build order with done-checks: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) (6 parts / 15 steps; Part 0 is already done).
+Step-by-step build order with done-checks: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). All code is implemented; what remains is credentials (SMTP app password, optional Adzuna/JSearch keys) and going live on the Actions cron.
 
-- **M2** — implement the 4 stub fetchers, go live on Actions cron (plan Parts 2–3).
-- **M3** — LLM classification (Claude Haiku) for experience level + true-remote check (plan Part 4).
+Filtering is keyword-rules only by design (no LLM/AI steps — owner decision). Improve precision by tuning the keyword lists in [src/config.ts](src/config.ts) as digests come in.

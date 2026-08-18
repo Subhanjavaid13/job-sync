@@ -1,11 +1,7 @@
-import type { Job } from '../types.js';
+﻿import type { Job } from '../types.js';
 import { config } from '../config.js';
 
-/**
- * Rules-based filter (PRD FR2). The precise "3–4 years experience" and
- * true-remote checks are the planned LLM step (PRD FR3 / M3), which will run
- * here after the rules, on rule-matched jobs only.
- */
+/** Rules-based filter (PRD FR2): keyword include/exclude + remote check. */
 export function filterJobs(jobs: Job[]): Job[] {
   return jobs.filter((job) => {
     // Tag-stuffed spam postings carry 20+ unrelated tags ("shopify" included).

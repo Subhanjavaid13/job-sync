@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { fetchers } from './fetchers/index.js';
 import { filterJobs } from './pipeline/filter.js';
-import { selectNewJobs, markSeen } from './pipeline/dedupe.js';
+import { selectNewJobs, markSeen, pruneSeenJobs } from './pipeline/dedupe.js';
 import { sendDigest } from './pipeline/email.js';
 
 async function main(): Promise<void> {
@@ -17,6 +17,8 @@ async function main(): Promise<void> {
     console.log(`[job-sync] ${fetcher.name}: ${result.value.length} jobs`);
     return result.value;
   });
+
+  pruneSeenJobs();
 
   const matched = filterJobs(jobs);
   const fresh = selectNewJobs(matched);

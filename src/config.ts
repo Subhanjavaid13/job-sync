@@ -25,6 +25,9 @@ export const config = {
 
   dbPath: process.env.DB_PATH ?? 'data/jobs.db',
 
+  /** Rows older than this are pruned from seen_jobs — a repost that old is effectively a new job. */
+  seenRetentionDays: 180,
+
   userAgent: 'job-sync/0.1 (personal job-alert tool)',
 
   email: {

@@ -31,4 +31,5 @@ There is no test suite yet. Verify changes by running `npm start` and reading th
 
 - Implemented: pipeline skeleton, all 6 fetchers, rules filter, dedupe, email-or-console digest, Actions cron workflow. Dedupe is delivery-safe: `selectNewJobs()` is read-only; `markSeen()` runs only after the digest sends — keep that ordering.
 - Key-gated (skip themselves until env is set): adzuna (`ADZUNA_APP_ID/KEY`), jsearch (`RAPIDAPI_KEY`; also self-limits to UTC hours divisible by 4, `JSEARCH_FORCE=1` to bypass).
-- Planned (PRD M3): one LLM classification step (Claude Haiku) inside `filter.ts` for experience level (3–4 yrs) and true-remote check — a fixed pipeline step, not agentic behavior.
+- Hardening in place: failure-alert email (`scripts/notify-failure.ts`, workflow `if: failure()`), seen-jobs retention pruning (180 days), HTML-escaped grouped digest.
+- **No LLM/AI steps** — owner decision (2026-08-18): filtering is keyword-rules only; do not add Anthropic/OpenAI/etc. dependencies. Precision is improved by tuning `src/config.ts` keyword lists.

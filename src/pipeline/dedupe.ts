@@ -49,6 +49,21 @@ export function selectNewJobs(jobs: Job[]): Job[] {
   return fresh;
 }
 
+/**
+ * Retention (PRD-adjacent hygiene): drop seen-rows older than the configured
+ * window. A reposting that old is effectively a new job, and this keeps the
+ * git-tracked DB from growing forever.
+ */
+export function pruneSeenJobs(): void {
+  const db = openDb();
+  const cutoff = new Date(Date.now() - config.seenRetentionDays * 24 * 60 * 60 * 1000).toISOString();
+  const { changes } = db.prepare('DELETE FROM seen_jobs WHERE first_seen < ?').run(cutoff);
+  db.close();
+  if (Number(changes) > 0) {
+    console.log(`[job-sync] pruned ${changes} seen-jobs older than ${config.seenRetentionDays} days`);
+  }
+}
+
 /** Records jobs as seen. Call only after the digest was delivered. */
 export function markSeen(jobs: Job[]): void {
   const db = openDb();

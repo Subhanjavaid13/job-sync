@@ -40,23 +40,21 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 
 ## Part 3 — Cloud deployment (🔲 3 steps, ~1 hour)
 
-- 🔲 **3.1 Push to GitHub** — create a private repo, push. Note: `.gitignore` currently excludes `PRD.md`; `data/` must stay tracked (it is the persistence layer).
+- ✅ **3.1 Push to GitHub** — pushed to `Subhanjavaid13/job-sync`. Note: `.gitignore` excludes `PRD.md` (stays local by choice); `data/` must stay tracked (it is the persistence layer).
 - 🔲 **3.2 Add repository secrets** — every value from `.env` (Settings → Secrets and variables → Actions), names exactly as in [.github/workflows/job-sync.yml](.github/workflows/job-sync.yml).
 - 🔲 **3.3 First cloud run** — trigger via the *Run workflow* button. **Done when:** the run is green, a digest arrives, and the workflow pushed a `chore: update dedupe DB` commit. After that the 2-hour cron needs nothing from you.
 
-## Part 4 — Filter quality: the LLM step (🔲 3 steps, ~½ day)
+## Part 4 — Filter quality: keyword tuning (🔲 ongoing)
 
-This is what turns "keyword matches" into "actually relevant for a 3–4 yrs remote Shopify dev".
+> ⚠️ Scope change (2026-08-18, owner decision): the originally planned LLM classification step (old 4.2) is **dropped** — no Anthropic API key, no AI dependencies. Precision comes from keyword tuning only.
 
-- 🔲 **4.1 Observe first** — let the pipeline run for ~3–5 days. Note false positives (e.g. Lemon.io marketplace posts) and any misses. Tune `includeKeywords` / `excludeKeywords` in [src/config.ts](src/config.ts).
-- 🔲 **4.2 LLM classification** — in `filter.ts`, after the rules pass, send each surviving job (title + first ~2000 chars of description) to Claude Haiku (`claude-haiku-4-5-20251001`) asking for JSON: `{ fullyRemote: boolean, fitsMidLevel: boolean, isShopifyDevRole: boolean }`. Keep jobs passing all three. Add `ANTHROPIC_API_KEY` to `.env`, `.env.example`, and workflow secrets. Fail open (keep the job, log a warning) if the API call errors.
-- 🔲 **4.3 Verify precision** — compare one week of digests before/after. **Done when:** ≥ 90 % of digest items are genuinely relevant (PRD success metric).
+- 🔲 **4.1 Observe & tune** — as digests arrive over the first 1–2 weeks, note false positives (e.g. non-dev roles that mention Shopify in the description) and tune `includeKeywords` / `excludeKeywords` / `descriptionKeywords` in [src/config.ts](src/config.ts). Repeat until the digest feels ≥ 90 % relevant (PRD success metric). Typical tweaks: add `"customer success"`, `"designer"`, `"marketing"` to `excludeKeywords`; require `shopify` in the title only.
 
-## Part 5 — Hardening & polish (🔲 3 steps, optional but recommended)
+## Part 5 — Hardening & polish ✅ (all implemented 2026-08-18)
 
-- 🔲 **5.1 Failure alerts** — GitHub notifies you of failed workflow runs by default; confirm notifications are on, or add a failure step that emails you.
-- 🔲 **5.2 Digest polish** — group jobs by source, add posted-date, salary highlighting; maybe a weekly "nothing new" heartbeat so you know it's alive.
-- 🔲 **5.3 DB retention** — jobs table grows forever; add a cleanup deleting rows with `first_seen` older than ~6 months (safe: reposts that old are effectively new jobs).
+- ✅ **5.1 Failure alerts** — `scripts/notify-failure.ts` + an `if: failure()` workflow step emails you when a cloud run fails (in addition to GitHub's own notifications). No-ops if SMTP is unset.
+- ✅ **5.2 Digest polish** — digest now groups jobs by source with counts, shows posted-date and location, highlights salary, HTML-escapes all external text, and includes a plain-text alternative part.
+- ✅ **5.3 DB retention** — every run prunes `seen_jobs` rows older than 180 days (`seenRetentionDays` in config), keeping the git-tracked DB small.
 
 ## Part 6 — Future ideas (🔲 backlog, no commitment)
 
