@@ -191,9 +191,9 @@ export const pageHtml = `<!doctype html>
       <div class="card tile"><div class="label">Jobs tracked</div><div class="value" id="kSeen">–</div><div class="hint">total in database</div></div>
       <div class="card tile"><div class="label">Emailed</div><div class="value" id="kEmailed">–</div><div class="hint">delivered to your inbox</div></div>
       <div class="card tile">
-        <div class="label">New this week</div>
-        <div class="tile-row"><div class="value" id="kWeek">–</div><svg id="spark" width="120" height="38" aria-hidden="true"></svg></div>
-        <div class="hint">last 14 days trend</div>
+        <div class="label">New today</div>
+        <div class="tile-row"><div class="value" id="kToday">–</div><svg id="spark" width="120" height="38" aria-hidden="true"></svg></div>
+        <div class="hint" id="kWeekHint">last 14 days trend</div>
       </div>
       <div class="card tile"><div class="label">Sources active</div><div class="value" id="kSources">–</div><div class="hint">boards contributing matches</div></div>
     </div>
@@ -217,6 +217,12 @@ export const pageHtml = `<!doctype html>
 
   <section id="tab-jobs" hidden>
     <div class="filters">
+      <select id="jobPeriod">
+        <option value="today">Today</option>
+        <option value="7d" selected>Last 7 days</option>
+        <option value="30d">Last 30 days</option>
+        <option value="">All time</option>
+      </select>
       <input type="search" id="jobSearch" placeholder="Search title or company…">
       <select id="jobSource"><option value="">All sources</option></select>
       <select id="jobOrder">
@@ -317,7 +323,8 @@ export const pageHtml = `<!doctype html>
     getJSON('/api/overview').then(function (d) {
       $('#kSeen').textContent = d.totals.seen;
       $('#kEmailed').textContent = d.totals.emailed;
-      $('#kWeek').textContent = d.totals.newThisWeek;
+      $('#kToday').textContent = d.totals.newToday;
+      $('#kWeekHint').textContent = d.totals.newThisWeek + ' this week \\u00B7 14-day trend';
       $('#kSources').textContent = d.totals.activeSources;
       drawSpark(d.perDay || []);
 
@@ -395,7 +402,8 @@ export const pageHtml = `<!doctype html>
     var q = encodeURIComponent($('#jobSearch').value || '');
     var src = encodeURIComponent($('#jobSource').value || '');
     var order = encodeURIComponent($('#jobOrder').value || 'recent');
-    getJSON('/api/jobs?q=' + q + '&source=' + src + '&order=' + order).then(function (d) {
+    var period = encodeURIComponent($('#jobPeriod').value);
+    getJSON('/api/jobs?q=' + q + '&source=' + src + '&order=' + order + '&period=' + period).then(function (d) {
       if (!sourcesLoaded) {
         d.sources.forEach(function (s) {
           var o = el('option', null, s); o.value = s;
@@ -405,7 +413,11 @@ export const pageHtml = `<!doctype html>
       }
       var body = $('#jobsBody');
       body.textContent = '';
-      $('#jobsEmpty').hidden = d.jobs.length > 0;
+      var empty = $('#jobsEmpty');
+      empty.hidden = d.jobs.length > 0;
+      empty.textContent = $('#jobPeriod').value === 'today'
+        ? 'No new jobs so far today — the daily cloud run happens each morning. Switch the period to "Last 7 days" to see recent matches.'
+        : 'No jobs match this filter. Older rows (before the dashboard existed) only carry an id — new runs store full details.';
       d.jobs.forEach(function (j) {
         var tr = el('tr');
         var tdScore = el('td', 'num');
@@ -439,6 +451,7 @@ export const pageHtml = `<!doctype html>
   $('#jobSearch').addEventListener('keydown', function (e) { if (e.key === 'Enter') loadJobs(); });
   $('#jobSource').addEventListener('change', loadJobs);
   $('#jobOrder').addEventListener('change', loadJobs);
+  $('#jobPeriod').addEventListener('change', loadJobs);
 
   /* ---------- leads ---------- */
   var COLS = [
@@ -464,6 +477,11 @@ export const pageHtml = `<!doctype html>
         c.appendChild(document.createTextNode(' ' + label));
         return c;
       }
+      var midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+      var newToday = d.leads.filter(function (l) {
+        return l.first_seen && new Date(l.first_seen) >= midnight;
+      }).length;
+      stats.appendChild(statChip('new today', newToday));
       stats.appendChild(statChip('open leads', open));
       stats.appendChild(statChip('won', won));
       stats.appendChild(statChip('lost', lost));

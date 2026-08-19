@@ -2,8 +2,10 @@ name: job-sync
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # every 2 hours (GitHub cron may drift 5–15 min — fine here)
-  workflow_dispatch: {} # manual "Run workflow" button
+    # Once daily at 03:00 UTC = 08:00 Pakistan (GMT+5). GitHub cron may drift
+    # 5–15 min. Both funnels (jobs + leads) run in this one daily slot.
+    - cron: '0 3 * * *'
+  workflow_dispatch: {} # manual "Run workflow" button — run anytime on demand
 
 permissions:
   contents: write # needed to commit the updated dedupe DB back
@@ -42,8 +44,8 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
 
       - name: Run leads pipeline
-        # Self-limits to UTC hour % 6 == 0 (~4×/day). Failures here must never
-        # block persisting the jobs dedupe state below — hence continue-on-error.
+        # Failures here must never block persisting the jobs dedupe state
+        # below — hence continue-on-error.
         continue-on-error: true
         run: npm run leads
 

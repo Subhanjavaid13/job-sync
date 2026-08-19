@@ -7,19 +7,10 @@ import { startRun, finishRun } from '../pipeline/runlog.js';
 
 /**
  * Leads pipeline entry (`npm run leads`) — run-and-exit, like the jobs
- * pipeline. See LEADS_PLAN.md. In CI it self-limits to every 3rd 2-hour cron
- * slot (UTC hour % 6 == 0 → ~4 runs/day); locally it always runs.
+ * pipeline. See LEADS_PLAN.md. Runs in the daily cron slot alongside jobs;
+ * once a day is well within every source's rate limits.
  */
 async function main(): Promise<void> {
-  if (
-    process.env.GITHUB_ACTIONS === 'true' &&
-    new Date().getUTCHours() % 6 !== 0 &&
-    process.env.LEADS_FORCE !== '1'
-  ) {
-    console.log('[job-sync] leads: skipped this cron slot (runs when UTC hour % 6 == 0)');
-    return;
-  }
-
   console.log(`[job-sync] leads run started ${new Date().toISOString()}`);
   const runId = startRun('leads');
 

@@ -144,11 +144,18 @@ function handleApi(req: http.IncomingMessage, res: http.ServerResponse, url: URL
     const db = openDb();
     const one = (sql: string) => Number((db.prepare(sql).get() as { n: number }).n);
     const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
     const totals = {
       seen: one('SELECT COUNT(*) AS n FROM seen_jobs'),
       emailed: one('SELECT COUNT(*) AS n FROM seen_jobs WHERE emailed = 1'),
       newThisWeek: Number(
         (db.prepare('SELECT COUNT(*) AS n FROM seen_jobs WHERE first_seen >= ?').get(weekAgo) as { n: number }).n,
+      ),
+      newToday: Number(
+        (db.prepare('SELECT COUNT(*) AS n FROM seen_jobs WHERE first_seen >= ?').get(todayStart.toISOString()) as {
+          n: number;
+        }).n,
       ),
       activeSources: one("SELECT COUNT(DISTINCT source) AS n FROM seen_jobs WHERE source IS NOT NULL"),
     };
@@ -191,6 +198,21 @@ function handleApi(req: http.IncomingMessage, res: http.ServerResponse, url: URL
     if (source) {
       where.push('source = ?');
       params.push(source);
+    }
+    // Daily-view filter: today (local midnight) / last 7 / last 30 days.
+    const period = url.searchParams.get('period') ?? '';
+    let cutoff: Date | null = null;
+    if (period === 'today') {
+      cutoff = new Date();
+      cutoff.setHours(0, 0, 0, 0);
+    } else if (period === '7d') {
+      cutoff = new Date(Date.now() - 7 * 86_400_000);
+    } else if (period === '30d') {
+      cutoff = new Date(Date.now() - 30 * 86_400_000);
+    }
+    if (cutoff) {
+      where.push('first_seen >= ?');
+      params.push(cutoff.toISOString());
     }
     const sql = `SELECT id, title, company, url, source, salary, location, posted_at, first_seen, score, emailed
       FROM seen_jobs ${where.length ? `WHERE ${where.join(' AND ')}` : ''}

@@ -34,7 +34,7 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 - ✅ **2.1 We Work Remotely** — RSS via `rss-parser`, live (25 jobs on first run).
 - ✅ **2.2 Jobicy** — JSON API, live (11 jobs on first run). Note: its `?tag=` search is loose — expect noise until Part 4.
 - ✅ **2.3 Adzuna** — *code done*; activates automatically once `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` are in `.env` (create at developer.adzuna.com). Optional `ADZUNA_COUNTRY` (default `us`).
-- ✅ **2.4 JSearch (RapidAPI)** — *code done*; activates once `RAPIDAPI_KEY` is in `.env`. Rate budget built in: only fires when UTC hour % 4 == 0 (~180 req/month vs. the ~200 free-tier cap); set `JSEARCH_FORCE=1` to bypass for a local test.
+- ✅ **2.4 JSearch (RapidAPI)** — key set (2026-08-19); waiting only on the free **Basic subscription** click on the JSearch page (key currently returns 403 without it). With the daily cron (~30 req/month vs. the ~200 free-tier cap) no rate gating is needed — the old every-4th-hour gate was removed.
 
 > Bonus fix while testing Part 2: delivery-safe dedupe — jobs are now marked "seen" only **after** the digest is sent, so a failed email retries next run instead of losing those jobs forever. Also, an untouched `SMTP_PASS` placeholder no longer crashes the run (falls back to console digest).
 
@@ -81,7 +81,7 @@ Full plan with sources, scoring, and architecture: [LEADS_PLAN.md](LEADS_PLAN.md
 - ✅ **8.1 Reddit source (L1)** — via **RSS search feeds** (the JSON API returns 403 to unauthenticated clients; RSS is served fine). Fetched sequentially with **20 s spacing + one retry pass after a 60 s cooldown** — measured: parallel or tight spacing trips the per-IP limit (429); subs that still fail are picked up next run. Intent filter + scoring per LEADS_PLAN §5.
 - ✅ **8.2 Contract-role routing (L2)** — matches whose title/tags contain `config.leads.contractMarkers` go to the leads board instead of the jobs digest (`splitContractRoles` in filter.ts).
 - ✅ **8.3 HN freelance threads (L3)** — exact-phrase discovery of the monthly "Freelancer? Seeking freelancer?" threads via Algolia, then comment search within. Low volume by nature — 0 hits in a month is normal, not a bug.
-- ✅ **8.4 Leads cron + email (completed 2026-08-18)** — `npm run leads` step in the Actions workflow, `continue-on-error` so a leads failure never blocks persisting jobs state; self-limits to UTC hour % 6 == 0 (`LEADS_FORCE=1` bypasses). New leads now also send a **notification email** (`sendLeadsDigest`) — unlike the jobs digest it never fails the run on missing SMTP, because the portal is the source of truth. Leads runs are logged in the `runs` table (`kind='leads'`) and appear in the dashboard's Recent runs with a kind chip.
+- ✅ **8.4 Leads cron + email (completed 2026-08-18)** — `npm run leads` step in the daily Actions cron, `continue-on-error` so a leads failure never blocks persisting jobs state (the old hour-gate was removed with the move to daily runs, 2026-08-19). New leads also send a **notification email** (`sendLeadsDigest`) — unlike the jobs digest it never fails the run on missing SMTP, because the portal is the source of truth. Leads runs are logged in the `runs` table (`kind='leads'`) and appear in the dashboard's Recent runs with a kind chip.
 - 🔲 **8.5 Freelancer.com (L5)** — needs free API key.
 - ✅ **8.6 Portal polish (L6, completed 2026-08-18)** — per-lead notes editor (persisted), activity dates, and **won/lost reporting**: a stats strip (open · won · lost · win rate) above the board plus won/lost chips on closed cards.
 
@@ -95,15 +95,13 @@ Fixed pipeline steps, not agents; nothing here blocks Parts 1–8:
 
 ---
 
-## What's left (2026-08-18)
+## What's left (updated 2026-08-19)
 
-Everything buildable without credentials or AI is **done**. The open items:
+**Gone live:** SMTP app password set (1.1 ✅), all 9 repository secrets added and cloud runs green (3.2/3.3 ✅), Adzuna live (2.3 ✅). Cadence is now **once daily at 08:00 PKT** plus on-demand runs; the dashboard has Today views for jobs and leads.
 
 | Item | Step | Blocked on |
 |---|---|---|
-| Real email delivery | 1.1 | Gmail **app password** for the sender account → `.env` `SMTP_PASS` |
-| Cloud secrets + verified green run | 3.2, 3.3 | You adding repository secrets on GitHub, then one manual *Run workflow* |
+| JSearch activation | 2.4 | One click: **Subscribe → Basic (free)** on the JSearch RapidAPI page (key already set; returns 403 until subscribed) |
 | Keyword tuning | 4.1 | Time — observe digests for 1–2 weeks, tune `src/config.ts` |
-| JSearch + Adzuna sources | (2.3/2.4 code done) | Their free API keys |
-| Freelancer.com lead source | 8.5 | Their free API key |
+| Freelancer.com lead source | 8.5 | Freelancer's developer portal requires **payment verification** on the account before it issues an API token — optional, parked |
 | AI steps | Part 9 | Owner decision to re-open AI |

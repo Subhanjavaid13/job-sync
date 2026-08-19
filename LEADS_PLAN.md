@@ -91,7 +91,7 @@ AI qualification is a **later** enhancement (see §7) — the rules version ship
 - ✅ **L1 Reddit source (S1)** — implemented 2026-08-18, with one discovery: Reddit's JSON API returns **403** to unauthenticated clients, so the source consumes the **RSS search feeds** instead (allowed and stable), sequentially with 20 s spacing + one retry pass after a 60 s cooldown (tighter spacing → 429; measured). Subs that still fail are covered by the next run. If RSS ever closes, upgrade to a free Reddit OAuth script app — never scraping.
 - ✅ **L2 Contract routing (S2)** — `splitContractRoles()` in the jobs pipeline; contract/freelance matches are stored as leads (floored at `minScore` — they already passed the jobs filter).
 - ✅ **L3 HN source (S3)** — exact-phrase thread discovery + comment search. Verified live; the current month simply has no Shopify mentions (3 "seeking freelancer" comments total) — expect occasional, high-quality hits.
-- ✅ **L4 Leads cron** — workflow step (every 6 h effective, `continue-on-error`). The digest-email leads section is still open; the portal board is the primary surface.
+- ✅ **L4 Leads cron + email** — workflow step in the daily cron (`continue-on-error` so leads never block jobs-state persistence); new leads send a notification email (fail-soft — the portal board is the source of truth).
 - 🔲 **L5 Freelancer.com (S4)** — needs their free API key in `.env`.
 - ✅ **L6 Portal polish (core)** — notes editor + activity dates. Won/lost reporting still open.
 - 🔲 **L7 (optional) New-store detection (S5)** — crt.sh watcher behind `LEADS_STORE_DETECT=1`.

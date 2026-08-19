@@ -16,19 +16,14 @@ interface JSearchJob {
 }
 
 // Google for Jobs results — includes postings originally from LinkedIn /
-// Indeed / Glassdoor. Free tier is ~200 requests/month while a 2-hour cron is
-// ~360 runs/month, so this source only fires on runs where the UTC hour is a
-// multiple of 4 (~180/month). Set JSEARCH_FORCE=1 to bypass locally.
+// Indeed / Glassdoor. Free tier is ~200 requests/month; the daily cron
+// (~30 runs/month) fits comfortably, so no rate gating is needed.
 export const jsearch: Fetcher = {
   name: 'jsearch',
   async fetchJobs(): Promise<Job[]> {
     const apiKey = process.env.RAPIDAPI_KEY;
     if (!apiKey) {
       console.warn('[job-sync] jsearch: skipped (RAPIDAPI_KEY not set)');
-      return [];
-    }
-    if (new Date().getUTCHours() % 4 !== 0 && process.env.JSEARCH_FORCE !== '1') {
-      console.log('[job-sync] jsearch: skipped this run (monthly rate budget)');
       return [];
     }
 
