@@ -1,6 +1,6 @@
 import type { Job } from '../types.js';
 import { config } from '../config.js';
-import { openDb } from './db.js';
+import { openDb, markDbDirty } from './db.js';
 
 /** Normalized company+title key to catch the same job cross-posted on multiple boards. */
 function companyTitleKey(job: Job): string {
@@ -62,6 +62,7 @@ export function markSeen(jobs: Job[], opts: { emailed: boolean }): void {
     );
   }
   db.close();
+  if (jobs.length > 0) markDbDirty();
 }
 
 /**
@@ -74,6 +75,7 @@ export function pruneSeenJobs(): void {
   const { changes } = db.prepare('DELETE FROM seen_jobs WHERE first_seen < ?').run(cutoff);
   db.close();
   if (Number(changes) > 0) {
+    markDbDirty();
     console.log(`[job-sync] pruned ${changes} seen-jobs older than ${config.seenRetentionDays} days`);
   }
 }

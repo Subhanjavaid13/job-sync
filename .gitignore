@@ -1,6 +1,7 @@
 node_modules/
 .env
 *.log
+data/.db-dirty
 PRD.md
 # IMPLEMENTATION_PLAN.md
 # NOTE: data/ is intentionally NOT ignored — data/jobs.db is the dedupe

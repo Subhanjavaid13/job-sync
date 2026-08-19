@@ -25,6 +25,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Tests
+        run: npm test
+
       - name: Run pipeline
         run: npm start
         env:
@@ -57,9 +60,17 @@ jobs:
 
       - name: Persist dedupe DB
         if: success()
+        # Commit only when the run marked the DB meaningfully changed (new
+        # jobs/leads or prunes) — run-log-only changes would otherwise produce
+        # a commit every 2 hours.
         run: |
-          git config user.name "job-sync-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add data/jobs.db
-          git diff --cached --quiet || git commit -m "chore: update dedupe DB [skip ci]"
-          git push
+          if [ -f data/.db-dirty ]; then
+            rm data/.db-dirty
+            git config user.name "job-sync-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add data/jobs.db
+            git diff --cached --quiet || git commit -m "chore: update dedupe DB [skip ci]"
+            git push
+          else
+            echo "No meaningful DB changes — skipping commit"
+          fi

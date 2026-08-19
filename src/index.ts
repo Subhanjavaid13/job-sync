@@ -10,7 +10,7 @@ import { insertNewLeads } from './leads/store.js';
 
 async function main(): Promise<void> {
   console.log(`[job-sync] run started ${new Date().toISOString()}`);
-  const runId = startRun();
+  const runId = startRun('jobs');
 
   try {
     const results = await Promise.allSettled(fetchers.map((f) => f.fetchJobs()));
@@ -44,7 +44,9 @@ async function main(): Promise<void> {
         // Already passed the jobs filter ⇒ relevant; floor at minScore so they always store.
         candidates.map((c) => ({ ...c, score: Math.max(scoreLead(c), config.leads.minScore) })),
       );
-      if (stored > 0) console.log(`[job-sync] routed ${stored} contract-type matches to leads`);
+      if (stored.length > 0) {
+        console.log(`[job-sync] routed ${stored.length} contract-type matches to leads`);
+      }
     }
 
     const fresh = selectNewJobs(matched);

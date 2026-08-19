@@ -9,9 +9,10 @@
 - `npm start` — run the jobs pipeline once (tsx, no build step)
 - `npm run leads` — run the leads pipeline once (in CI it self-limits to UTC hour % 6 == 0; `LEADS_FORCE=1` to bypass)
 - `npm run ui` — local dashboard at http://localhost:4321 (127.0.0.1 only; `UI_PORT` to change)
+- `npm test` — unit tests (node:test via tsx) for filter/scoring/dedupe/lead-intent; CI runs them before the pipeline
 - `npm run typecheck` — `tsc --noEmit`
 
-There is no test suite yet. Verify changes by running `npm start` / `npm run leads` and reading the console output (with SMTP unset, the digest prints to console instead of sending).
+Verify changes with `npm test` + `npm run typecheck`, then a real `npm start` / `npm run leads` and read the console output (with SMTP unset, digests print to console instead of sending). Tests use a temp DB via `DB_PATH` — set it before importing modules (config reads env at import time).
 
 ## Architecture rules
 

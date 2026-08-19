@@ -301,6 +301,17 @@ const server = http.createServer((req, res) => {
   }
 });
 
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `[job-sync] port ${config.ui.port} is already in use — another dashboard instance is likely running.\n` +
+        `[job-sync] Open http://localhost:${config.ui.port}, or start on a different port: UI_PORT=4322 npm run ui`,
+    );
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(config.ui.port, '127.0.0.1', () => {
   console.log(`[job-sync] dashboard running at http://localhost:${config.ui.port}`);
   console.log('[job-sync] local-only (bound to 127.0.0.1). Ctrl+C to stop.');

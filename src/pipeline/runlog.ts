@@ -1,11 +1,11 @@
 import { openDb } from './db.js';
 
 /** Opens a run row; the dashboard's Runs table is built from these. */
-export function startRun(): number {
+export function startRun(kind: 'jobs' | 'leads' = 'jobs'): number {
   const db = openDb();
   const { lastInsertRowid } = db
-    .prepare(`INSERT INTO runs (started_at, status) VALUES (?, 'running')`)
-    .run(new Date().toISOString());
+    .prepare(`INSERT INTO runs (started_at, status, kind) VALUES (?, 'running', ?)`)
+    .run(new Date().toISOString(), kind);
   db.close();
   return Number(lastInsertRowid);
 }

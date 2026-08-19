@@ -90,14 +90,7 @@ export async function sendDigest(jobs: Job[]): Promise<'emailed' | 'console'> {
     return 'console';
   }
 
-  const transport = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpPort === 465,
-    auth: smtpUser ? { user: smtpUser, pass: smtpPass } : undefined,
-  });
-
-  await transport.sendMail({
+  await createTransport().sendMail({
     from,
     to,
     subject: `[job-sync] ${jobs.length} new remote Shopify job${jobs.length === 1 ? '' : 's'}`,
@@ -105,5 +98,68 @@ export async function sendDigest(jobs: Job[]): Promise<'emailed' | 'console'> {
     html: digestHtml(jobs),
   });
   console.log(`[job-sync] digest emailed to ${to}`);
+  return 'emailed';
+}
+
+function createTransport() {
+  const { smtpHost, smtpPort, smtpUser, smtpPass } = config.email;
+  return nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: smtpUser ? { user: smtpUser, pass: smtpPass } : undefined,
+  });
+}
+
+export interface LeadEmailItem {
+  title: string;
+  url: string;
+  source: string;
+  score: number;
+  budget?: string;
+}
+
+function leadsText(leads: LeadEmailItem[]): string {
+  return leads
+    .map((l) => `  • [${l.score}] ${l.title} (${l.source}${l.budget ? `, ${l.budget}` : ''}) ${l.url}`)
+    .join('\n');
+}
+
+function leadsHtml(leads: LeadEmailItem[]): string {
+  const items = leads
+    .map(
+      (l) => `
+    <li style="margin:0 0 12px">
+      <a href="${esc(l.url)}"><strong>${esc(l.title)}</strong></a>
+      <br><small style="color:#666">${esc(l.source)} · match ${l.score}${l.budget ? ` · <span style="color:#0a7d38;font-weight:600">${esc(l.budget)}</span>` : ''}</small>
+    </li>`,
+    )
+    .join('');
+  return `
+    <h2>${leads.length} new Shopify project lead${leads.length === 1 ? '' : 's'}</h2>
+    <ul style="margin:0;padding-left:18px">${items}</ul>
+    <p style="margin-top:20px"><small style="color:#999">Manage them on the job-sync dashboard (Leads tab). Sent by job-sync.</small></p>`;
+}
+
+/**
+ * Leads notification email (LEADS_PLAN L4). Unlike the jobs digest, this NEVER
+ * throws for missing SMTP — the portal is the source of truth for leads, and
+ * they are already stored; the email is a convenience notification.
+ */
+export async function sendLeadsDigest(leads: LeadEmailItem[]): Promise<'emailed' | 'console'> {
+  const { smtpHost, smtpPass, to, from } = config.email;
+  if (!smtpHost || !to || !smtpPass || smtpPass.startsWith('YOUR_')) {
+    console.log('[job-sync] SMTP not configured — new leads (see dashboard):');
+    console.log(leadsText(leads));
+    return 'console';
+  }
+  await createTransport().sendMail({
+    from,
+    to,
+    subject: `[job-sync] ${leads.length} new Shopify project lead${leads.length === 1 ? '' : 's'}`,
+    text: leadsText(leads),
+    html: leadsHtml(leads),
+  });
+  console.log(`[job-sync] leads digest emailed to ${to}`);
   return 'emailed';
 }

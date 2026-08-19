@@ -55,6 +55,8 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 - ✅ **5.1 Failure alerts** — `scripts/notify-failure.ts` + an `if: failure()` workflow step emails you when a cloud run fails (in addition to GitHub's own notifications). No-ops if SMTP is unset.
 - ✅ **5.2 Digest polish** — digest now groups jobs by source with counts, shows posted-date and location, highlights salary, HTML-escapes all external text, and includes a plain-text alternative part.
 - ✅ **5.3 DB retention** — every run prunes `seen_jobs` rows older than 180 days (`seenRetentionDays` in config), keeping the git-tracked DB small.
+- ✅ **5.4 Test suite (added 2026-08-18)** — `npm test`: 21 unit tests (node:test + tsx) covering the rules filter, scoring, contract-role split, lead intent gate/exclusions, and dedupe against a temp DB. CI runs them before every pipeline run.
+- ✅ **5.5 DB-commit gating (added 2026-08-18)** — pipelines write a gitignored `data/.db-dirty` marker only on meaningful changes (new jobs/leads, prunes); the workflow commits the DB only when the marker exists, ending the every-2-hours run-log-only commits.
 
 ## Part 6 — Former backlog ✅ (all implemented 2026-08-18)
 
@@ -79,9 +81,9 @@ Full plan with sources, scoring, and architecture: [LEADS_PLAN.md](LEADS_PLAN.md
 - ✅ **8.1 Reddit source (L1)** — via **RSS search feeds** (the JSON API returns 403 to unauthenticated clients; RSS is served fine). Fetched sequentially with **20 s spacing + one retry pass after a 60 s cooldown** — measured: parallel or tight spacing trips the per-IP limit (429); subs that still fail are picked up next run. Intent filter + scoring per LEADS_PLAN §5.
 - ✅ **8.2 Contract-role routing (L2)** — matches whose title/tags contain `config.leads.contractMarkers` go to the leads board instead of the jobs digest (`splitContractRoles` in filter.ts).
 - ✅ **8.3 HN freelance threads (L3)** — exact-phrase discovery of the monthly "Freelancer? Seeking freelancer?" threads via Algolia, then comment search within. Low volume by nature — 0 hits in a month is normal, not a bug.
-- ✅ **8.4 Leads cron** — `npm run leads` step in the Actions workflow, `continue-on-error` so a leads failure never blocks persisting jobs state; self-limits to UTC hour % 6 == 0 (`LEADS_FORCE=1` bypasses). *Digest email section for leads: still 🔲 (portal is the primary surface for now).*
+- ✅ **8.4 Leads cron + email (completed 2026-08-18)** — `npm run leads` step in the Actions workflow, `continue-on-error` so a leads failure never blocks persisting jobs state; self-limits to UTC hour % 6 == 0 (`LEADS_FORCE=1` bypasses). New leads now also send a **notification email** (`sendLeadsDigest`) — unlike the jobs digest it never fails the run on missing SMTP, because the portal is the source of truth. Leads runs are logged in the `runs` table (`kind='leads'`) and appear in the dashboard's Recent runs with a kind chip.
 - 🔲 **8.5 Freelancer.com (L5)** — needs free API key.
-- ✅ **8.6 Portal polish (L6, core)** — per-lead notes editor (persisted) + activity dates on cards. *Won/lost reporting: still 🔲.*
+- ✅ **8.6 Portal polish (L6, completed 2026-08-18)** — per-lead notes editor (persisted), activity dates, and **won/lost reporting**: a stats strip (open · won · lost · win rate) above the board plus won/lost chips on closed cards.
 
 ## Part 9 — AI integration (deferred by owner decision — planned for later)
 
@@ -104,5 +106,4 @@ Everything buildable without credentials or AI is **done**. The open items:
 | Keyword tuning | 4.1 | Time — observe digests for 1–2 weeks, tune `src/config.ts` |
 | JSearch + Adzuna sources | (2.3/2.4 code done) | Their free API keys |
 | Freelancer.com lead source | 8.5 | Their free API key |
-| Leads digest-email section, won/lost stats | 8.4/8.6 remainder | Nothing — small, anytime |
 | AI steps | Part 9 | Owner decision to re-open AI |

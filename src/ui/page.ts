@@ -148,6 +148,13 @@ export const pageHtml = `<!doctype html>
   }
   .btn-sm { padding: 4px 10px; font-size: 12px; }
 
+  .lead-stats { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .stat-chip {
+    background: var(--card); border: 1px solid var(--hairline); border-radius: 999px;
+    padding: 6px 14px; font-size: 12.5px; color: var(--secondary); box-shadow: var(--shadow);
+  }
+  .stat-chip strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+
   .banner {
     border: 1px dashed var(--baseline); border-radius: 10px; padding: 10px 14px;
     color: var(--secondary); font-size: 13px; margin-bottom: 14px; background: var(--card);
@@ -200,7 +207,7 @@ export const pageHtml = `<!doctype html>
         <h2>Recent runs</h2>
         <p class="sub">local and cloud pipeline executions</p>
         <div style="overflow-x:auto"><table>
-          <thead><tr><th>Status</th><th>Started</th><th class="num">Duration</th><th class="num">Fetched</th><th class="num">Matched</th><th class="num">New</th><th class="num">Emailed</th></tr></thead>
+          <thead><tr><th>Status</th><th>Kind</th><th>Started</th><th class="num">Duration</th><th class="num">Fetched</th><th class="num">Matched</th><th class="num">New</th><th class="num">Emailed</th></tr></thead>
           <tbody id="runsBody"></tbody>
         </table></div>
         <div id="runsEmpty" class="empty" hidden>No runs recorded yet — trigger one from the Run tab.</div>
@@ -233,6 +240,7 @@ export const pageHtml = `<!doctype html>
       (see LEADS_PLAN.md: Reddit hiring posts, HN freelance threads, contract roles from the job sources, Freelancer.com).
       Status changes on samples are not saved.
     </div>
+    <div class="lead-stats" id="leadStats"></div>
     <div class="board" id="leadsBoard"></div>
   </section>
 
@@ -337,6 +345,7 @@ export const pageHtml = `<!doctype html>
         var tr = el('tr');
         var tdS = el('td'); tdS.appendChild(statusChip(r.status)); tr.appendChild(tdS);
         if (r.error) tdS.title = r.error;
+        var tdK = el('td'); tdK.appendChild(el('span', 'chip chip-source', r.kind || 'jobs')); tr.appendChild(tdK);
         tr.appendChild(el('td', 'num', fmtDateTime(r.started_at)));
         var dur = '–';
         if (r.finished_at && r.started_at) {
@@ -442,6 +451,24 @@ export const pageHtml = `<!doctype html>
   function loadLeads() {
     getJSON('/api/leads').then(function (d) {
       $('#leadsBanner').hidden = !d.sample;
+
+      // Won/lost reporting strip
+      var won = d.leads.filter(function (l) { return l.status === 'won'; }).length;
+      var lost = d.leads.filter(function (l) { return l.status === 'lost'; }).length;
+      var open = d.leads.length - won - lost;
+      var stats = $('#leadStats');
+      stats.textContent = '';
+      function statChip(label, value) {
+        var c = el('span', 'stat-chip');
+        c.appendChild(el('strong', null, value));
+        c.appendChild(document.createTextNode(' ' + label));
+        return c;
+      }
+      stats.appendChild(statChip('open leads', open));
+      stats.appendChild(statChip('won', won));
+      stats.appendChild(statChip('lost', lost));
+      if (won + lost > 0) stats.appendChild(statChip('win rate', Math.round((won / (won + lost)) * 100) + '%'));
+
       var board = $('#leadsBoard');
       board.textContent = '';
       COLS.forEach(function (col) {
@@ -462,6 +489,8 @@ export const pageHtml = `<!doctype html>
           card.appendChild(t);
           if (l.summary) card.appendChild(el('div', 's', l.summary));
           var meta = el('div', 'meta');
+          if (l.status === 'won') meta.appendChild(el('span', 'chip st-ok', '\\u25CF won'));
+          else if (l.status === 'lost') meta.appendChild(el('span', 'chip st-failed', '\\u2715 lost'));
           if (d.sample) meta.appendChild(el('span', 'chip chip-sample', 'SAMPLE'));
           if (l.source) meta.appendChild(el('span', 'chip chip-source', l.source));
           if (l.budget) meta.appendChild(el('span', 'chip chip-salary', l.budget));

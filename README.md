@@ -57,8 +57,9 @@ With no `.env`, runs still work: jobs are fetched, filtered, deduped, and the di
 Useful scripts:
 
 - `npm start` — one jobs-pipeline run
-- `npm run leads` — one leads-pipeline run
+- `npm run leads` — one leads-pipeline run (emails new leads too, when SMTP is set)
 - `npm run ui` — local dashboard
+- `npm test` — unit tests (filter, scoring, lead intent, dedupe)
 - `npm run typecheck` — TypeScript check, no emit
 
 ## Configuration
@@ -108,6 +109,7 @@ src/
     page.ts           the dashboard (zero dependencies, contrast-validated palette)
 scripts/
   notify-failure.ts   failure-alert email for CI
+tests/                unit tests (node:test via tsx) — filter, scoring, leads intent, dedupe
 ```
 
 ## Roadmap

@@ -12,6 +12,7 @@
     "leads": "tsx src/leads/index.ts",
     "ui": "tsx src/ui/server.ts",
     "notify:failure": "tsx scripts/notify-failure.ts",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

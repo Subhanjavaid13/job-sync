@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { config } from '../config.js';
 
 /**
@@ -68,5 +68,23 @@ export function openDb(): DatabaseSync {
     if (!existing.has(name)) db.exec(`ALTER TABLE seen_jobs ADD COLUMN ${name} ${type}`);
   }
 
+  // Additive migration: runs gained a kind ('jobs' | 'leads').
+  const runCols = new Set(
+    (db.prepare('PRAGMA table_info(runs)').all() as Array<{ name: string }>).map((c) => c.name),
+  );
+  if (!runCols.has('kind')) {
+    db.exec(`ALTER TABLE runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'jobs'`);
+  }
+
   return db;
+}
+
+/**
+ * Marks the DB as meaningfully changed (new jobs/leads, prunes). The Actions
+ * workflow commits data/jobs.db only when this marker exists — without it,
+ * run-log-only changes would produce a commit every 2 hours. The marker file
+ * itself is gitignored and deleted by the workflow after committing.
+ */
+export function markDbDirty(): void {
+  writeFileSync(join(dirname(config.dbPath), '.db-dirty'), new Date().toISOString());
 }

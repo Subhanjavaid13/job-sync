@@ -1,6 +1,6 @@
 import type { LeadCandidate } from '../types.js';
 import { config } from '../config.js';
-import { openDb } from '../pipeline/db.js';
+import { openDb, markDbDirty } from '../pipeline/db.js';
 
 function titleKey(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 120);
@@ -9,9 +9,11 @@ function titleKey(title: string): string {
 /**
  * Inserts never-seen leads (status 'new'). Dedupe: exact id, plus normalized
  * title against everything already stored (same post cross-shared elsewhere).
- * Returns how many were actually inserted.
+ * Returns the leads that were actually inserted.
  */
-export function insertNewLeads(leads: Array<LeadCandidate & { score: number }>): number {
+export function insertNewLeads(
+  leads: Array<LeadCandidate & { score: number }>,
+): Array<LeadCandidate & { score: number }> {
   const db = openDb();
   const existingTitles = new Set(
     (db.prepare('SELECT title FROM leads').all() as Array<{ title: string }>).map((r) => titleKey(r.title)),
@@ -23,7 +25,7 @@ export function insertNewLeads(leads: Array<LeadCandidate & { score: number }>):
   `);
 
   const now = new Date().toISOString();
-  let inserted = 0;
+  const inserted: Array<LeadCandidate & { score: number }> = [];
   for (const lead of leads) {
     const key = titleKey(lead.title);
     if (existingTitles.has(key)) continue;
@@ -41,11 +43,12 @@ export function insertNewLeads(leads: Array<LeadCandidate & { score: number }>):
       now,
     );
     if (Number(changes) > 0) {
-      inserted += 1;
+      inserted.push(lead);
       existingTitles.add(key);
     }
   }
   db.close();
+  if (inserted.length > 0) markDbDirty();
   return inserted;
 }
 
@@ -58,6 +61,7 @@ export function pruneStaleLeads(): void {
     .run(cutoff);
   db.close();
   if (Number(changes) > 0) {
+    markDbDirty();
     console.log(`[job-sync] leads: pruned ${changes} stale 'new' leads (> ${config.leads.staleNewDays} days)`);
   }
 }
