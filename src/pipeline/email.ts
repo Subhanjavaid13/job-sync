@@ -117,27 +117,49 @@ export interface LeadEmailItem {
   source: string;
   score: number;
   budget?: string;
+  contact?: string;
+  body?: string;
+}
+
+/** Best matches first, capped so the email stays scannable. */
+const MAX_LEADS_IN_EMAIL = 15;
+
+function snippet(l: LeadEmailItem): string {
+  return (l.body ?? '').replace(/\s+/g, ' ').trim().slice(0, 220);
 }
 
 function leadsText(leads: LeadEmailItem[]): string {
   return leads
-    .map((l) => `  • [${l.score}] ${l.title} (${l.source}${l.budget ? `, ${l.budget}` : ''}) ${l.url}`)
+    .slice(0, MAX_LEADS_IN_EMAIL)
+    .map((l) => {
+      const lines = [`  • [match ${l.score}] ${l.title} (${l.source}${l.budget ? `, ${l.budget}` : ''})`];
+      if (l.contact) lines.push(`      contact: ${l.contact}`);
+      const s = snippet(l);
+      if (s) lines.push(`      ${s}`);
+      lines.push(`      ${l.url}`);
+      return lines.join('\n');
+    })
     .join('\n');
 }
 
 function leadsHtml(leads: LeadEmailItem[]): string {
   const items = leads
+    .slice(0, MAX_LEADS_IN_EMAIL)
     .map(
       (l) => `
-    <li style="margin:0 0 12px">
-      <a href="${esc(l.url)}"><strong>${esc(l.title)}</strong></a>
+    <li style="margin:0 0 16px">
+      <a href="${esc(l.url)}" style="font-size:15px"><strong>${esc(l.title)}</strong></a>
       <br><small style="color:#666">${esc(l.source)} · match ${l.score}${l.budget ? ` · <span style="color:#0a7d38;font-weight:600">${esc(l.budget)}</span>` : ''}</small>
+      ${l.contact ? `<br><small><strong>Contact:</strong> ${esc(l.contact)}</small>` : ''}
+      ${snippet(l) ? `<br><small style="color:#444">${esc(snippet(l))}…</small>` : ''}
     </li>`,
     )
     .join('');
+  const extra = leads.length > MAX_LEADS_IN_EMAIL ? `<p><small>+${leads.length - MAX_LEADS_IN_EMAIL} more on the dashboard.</small></p>` : '';
   return `
     <h2>${leads.length} new Shopify project lead${leads.length === 1 ? '' : 's'}</h2>
-    <ul style="margin:0;padding-left:18px">${items}</ul>
+    <p style="color:#666;margin:0 0 14px"><small>Best matches first. Contact = author handle / company plus any email or phone found in the post.</small></p>
+    <ul style="margin:0;padding-left:18px">${items}</ul>${extra}
     <p style="margin-top:20px"><small style="color:#999">Manage them on the job-sync dashboard (Leads tab). Sent by job-sync.</small></p>`;
 }
 

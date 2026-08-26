@@ -30,7 +30,7 @@ Local-only interface at http://localhost:4321 (binds 127.0.0.1) — no more runn
 | Jobicy | ✅ live | free public API |
 | Company boards (Klaviyo, Postscript, Yotpo, AfterShip, Remote.com, Okendo) | ✅ live | Greenhouse/Lever public JSON — list is data in `config.targetBoards` |
 | Adzuna | ✅ live | free keys at developer.adzuna.com |
-| JSearch (RapidAPI) | ✅ key set — needs the free **Basic** subscription on the JSearch page | free tier on rapidapi.com (~200 req/mo; daily runs use ~30) |
+| JSearch (RapidAPI) | ✅ live (v5 `/search-v2`) | free tier on rapidapi.com (~200 req/mo; twice-daily runs use ~60) |
 
 ## Lead sources
 
@@ -77,7 +77,7 @@ All criteria are data in [src/config.ts](src/config.ts): job keywords/exclusions
 
 ## Deployment (GitHub Actions)
 
-[.github/workflows/job-sync.yml](.github/workflows/job-sync.yml) runs both pipelines **once daily at 08:00 Pakistan time** (03:00 UTC) and commits the updated DB back to the repo so state persists between runs. Run on demand anytime via the *Run workflow* button (cloud) or the dashboard's Run tab (local). To go live:
+[.github/workflows/job-sync.yml](.github/workflows/job-sync.yml) runs both pipelines **twice daily — 08:00 and 18:00 Pakistan time** — and commits the updated DB back to the repo so state persists between runs. Each run sends at most one digest (jobs) and one leads email, only when there is something new. Run on demand anytime via the *Run workflow* button (cloud) or the dashboard's Run tab (local: *Run jobs now* / *Run leads now*). To go live:
 
 1. Push this repo to GitHub.
 2. Add the `.env` values as **repository secrets** (Settings → Secrets → Actions). Until they exist, cloud runs with new matches fail on purpose instead of silently consuming jobs.

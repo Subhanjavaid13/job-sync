@@ -34,7 +34,7 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 - ✅ **2.1 We Work Remotely** — RSS via `rss-parser`, live (25 jobs on first run).
 - ✅ **2.2 Jobicy** — JSON API, live (11 jobs on first run). Note: its `?tag=` search is loose — expect noise until Part 4.
 - ✅ **2.3 Adzuna** — *code done*; activates automatically once `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` are in `.env` (create at developer.adzuna.com). Optional `ADZUNA_COUNTRY` (default `us`).
-- ✅ **2.4 JSearch (RapidAPI)** — key set (2026-08-19); waiting only on the free **Basic subscription** click on the JSearch page (key currently returns 403 without it). With the daily cron (~30 req/month vs. the ~200 free-tier cap) no rate gating is needed — the old every-4th-hour gate was removed.
+- ✅ **2.4 JSearch (RapidAPI)** — live (2026-08-26). Gotcha: the subscription produced a **404**, not a 403 — JSearch v5 removed `/search`; the fetcher now calls `/search-v2` (`work_from_home=true`, results under `data.jobs`). Twice-daily runs ≈ 60 req/month vs. the ~200 free cap.
 
 > Bonus fix while testing Part 2: delivery-safe dedupe — jobs are now marked "seen" only **after** the digest is sent, so a failed email retries next run instead of losing those jobs forever. Also, an untouched `SMTP_PASS` placeholder no longer crashes the run (falls back to console digest).
 
@@ -77,7 +77,7 @@ One step per stub fetcher. Each has the endpoint + response shape already docume
 
 Full plan with sources, scoring, and architecture: [LEADS_PLAN.md](LEADS_PLAN.md).
 
-- ✅ **8.0 Portal + schema (L0)** — `leads` table, status workflow (new → shortlisted → contacted → replied → won/lost), dashboard board with persisted status changes; sample preview shown (clearly marked) only while the table is empty.
+- ✅ **8.0 Portal + schema (L0)** — `leads` table, status workflow (new → shortlisted → contacted → replied → won/lost), dashboard board with persisted status changes. (Sample preview data was removed 2026-08-26 — the board only ever shows real leads now.) Leads carry a **contact** (author handle / company + any email or phone found in the post), shown on cards and in the leads email.
 - ✅ **8.1 Reddit source (L1)** — via **RSS search feeds** (the JSON API returns 403 to unauthenticated clients; RSS is served fine). Fetched sequentially with **20 s spacing + one retry pass after a 60 s cooldown** — measured: parallel or tight spacing trips the per-IP limit (429); subs that still fail are picked up next run. Intent filter + scoring per LEADS_PLAN §5.
 - ✅ **8.2 Contract-role routing (L2)** — matches whose title/tags contain `config.leads.contractMarkers` go to the leads board instead of the jobs digest (`splitContractRoles` in filter.ts).
 - ✅ **8.3 HN freelance threads (L3)** — exact-phrase discovery of the monthly "Freelancer? Seeking freelancer?" threads via Algolia, then comment search within. Low volume by nature — 0 hits in a month is normal, not a bug.
@@ -101,7 +101,7 @@ Fixed pipeline steps, not agents; nothing here blocks Parts 1–8:
 
 | Item | Step | Blocked on |
 |---|---|---|
-| JSearch activation | 2.4 | One click: **Subscribe → Basic (free)** on the JSearch RapidAPI page (key already set; returns 403 until subscribed) |
 | Keyword tuning | 4.1 | Time — observe digests for 1–2 weeks, tune `src/config.ts` |
+| Working the leads board | — | You: shortlist / contact / mark won-lost; the pipeline only fills the "New" column |
 | Freelancer.com lead source | 8.5 | Freelancer's developer portal requires **payment verification** on the account before it issues an API token — optional, parked |
 | AI steps | Part 9 | Owner decision to re-open AI |

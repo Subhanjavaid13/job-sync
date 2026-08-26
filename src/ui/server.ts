@@ -29,15 +29,19 @@ function pushLog(chunk: Buffer | string): void {
   }
 }
 
-function triggerRun(): boolean {
+type RunKind = 'jobs' | 'leads';
+
+/** Spawns the real pipeline (`npm start` or `npm run leads`) exactly as the cron does. */
+function triggerRun(kind: RunKind): boolean {
   if (runState.running) return false;
   runState.running = true;
   runState.startedAt = new Date().toISOString();
   runState.exitCode = null;
-  runState.log = ['[ui] starting pipeline…'];
+  runState.log = [`[ui] starting ${kind} pipeline…`];
 
+  const args = kind === 'leads' ? ['run', 'leads'] : ['start'];
   // shell:true so Windows resolves npm.cmd
-  const child = spawn('npm', ['start'], { cwd: ROOT, shell: true, env: { ...process.env } });
+  const child = spawn('npm', args, { cwd: ROOT, shell: true, env: { ...process.env } });
   child.stdout.on('data', pushLog);
   child.stderr.on('data', pushLog);
   child.on('close', (code) => {
@@ -70,74 +74,6 @@ function readBody(req: http.IncomingMessage): Promise<string> {
     req.on('error', reject);
   });
 }
-
-const SAMPLE_LEADS = [
-  {
-    id: 'sample:1',
-    title: 'Shopify theme customization for fashion store',
-    summary: 'Merchant on r/shopify looking for a developer to customize the Dawn theme: mega menu, quick-buy, and speed fixes.',
-    url: 'https://www.reddit.com/r/shopify/',
-    source: 'reddit',
-    budget: '$1,500',
-    score: 12,
-    status: 'new',
-    posted_at: '2026-08-16T10:00:00Z',
-    first_seen: '2026-08-16T12:00:00Z',
-    updated_at: '2026-08-16T12:00:00Z',
-  },
-  {
-    id: 'sample:2',
-    title: 'Migrate WooCommerce store to Shopify (250 products)',
-    summary: 'Full migration project: products, customers, redirects, and a near-identical theme rebuild.',
-    url: 'https://www.freelancer.com/',
-    source: 'freelancer.com',
-    budget: '$2,000–4,000',
-    score: 10,
-    status: 'shortlisted',
-    posted_at: '2026-08-15T09:00:00Z',
-    first_seen: '2026-08-15T11:00:00Z',
-    updated_at: '2026-08-17T08:00:00Z',
-  },
-  {
-    id: 'sample:3',
-    title: 'Hydrogen storefront build for beverage brand',
-    summary: 'Agency posting in an HN freelance thread seeking a contractor for a 6-week headless Hydrogen build.',
-    url: 'https://news.ycombinator.com/',
-    source: 'hackernews',
-    budget: undefined,
-    score: 9,
-    status: 'contacted',
-    posted_at: '2026-08-12T14:00:00Z',
-    first_seen: '2026-08-12T16:00:00Z',
-    updated_at: '2026-08-17T19:00:00Z',
-  },
-  {
-    id: 'sample:4',
-    title: 'Ongoing Shopify Plus support retainer',
-    summary: 'Contract-type posting routed from the job sources: recurring theme + app maintenance, ~15 h/week.',
-    url: 'https://jobicy.com/',
-    source: 'contract-role',
-    budget: '$45/hr',
-    score: 8,
-    status: 'replied',
-    posted_at: '2026-08-10T08:00:00Z',
-    first_seen: '2026-08-10T09:00:00Z',
-    updated_at: '2026-08-18T07:00:00Z',
-  },
-  {
-    id: 'sample:5',
-    title: 'Checkout UI extension for subscription app',
-    summary: 'Two-week fixed-scope build of a checkout UI extension; delivered and paid.',
-    url: 'https://www.reddit.com/r/shopify/',
-    source: 'reddit',
-    budget: '$900',
-    score: 7,
-    status: 'won',
-    posted_at: '2026-08-02T10:00:00Z',
-    first_seen: '2026-08-02T12:00:00Z',
-    updated_at: '2026-08-09T10:00:00Z',
-  },
-];
 
 function handleApi(req: http.IncomingMessage, res: http.ServerResponse, url: URL): void {
   if (url.pathname === '/api/overview') {
@@ -228,13 +164,10 @@ function handleApi(req: http.IncomingMessage, res: http.ServerResponse, url: URL
 
   if (url.pathname === '/api/leads' && req.method === 'GET') {
     const db = openDb();
-    const rows = db.prepare('SELECT * FROM leads ORDER BY updated_at DESC').all();
+    // Best matches first within each status column; newest activity breaks ties.
+    const rows = db.prepare('SELECT * FROM leads ORDER BY score DESC, updated_at DESC').all();
     db.close();
-    if (rows.length === 0) {
-      json(res, 200, { leads: SAMPLE_LEADS, sample: true, statuses: LEAD_STATUSES });
-    } else {
-      json(res, 200, { leads: rows, sample: false, statuses: LEAD_STATUSES });
-    }
+    json(res, 200, { leads: rows, statuses: LEAD_STATUSES });
     return;
   }
 
@@ -244,10 +177,6 @@ function handleApi(req: http.IncomingMessage, res: http.ServerResponse, url: URL
         const { id, status } = JSON.parse(body || '{}') as { id?: string; status?: string };
         if (!id || !status || !(LEAD_STATUSES as readonly string[]).includes(status)) {
           json(res, 400, { ok: false, error: 'invalid id/status' });
-          return;
-        }
-        if (id.startsWith('sample:')) {
-          json(res, 200, { ok: true, sample: true });
           return;
         }
         const db = openDb();
@@ -269,10 +198,6 @@ function handleApi(req: http.IncomingMessage, res: http.ServerResponse, url: URL
           json(res, 400, { ok: false, error: 'invalid id/notes' });
           return;
         }
-        if (id.startsWith('sample:')) {
-          json(res, 200, { ok: true, sample: true });
-          return;
-        }
         const db = openDb();
         const { changes } = db
           .prepare('UPDATE leads SET notes = ?, updated_at = ? WHERE id = ?')
@@ -285,8 +210,13 @@ function handleApi(req: http.IncomingMessage, res: http.ServerResponse, url: URL
   }
 
   if (url.pathname === '/api/run' && req.method === 'POST') {
-    const started = triggerRun();
-    json(res, started ? 200 : 409, { ok: started, running: runState.running });
+    readBody(req)
+      .then((body) => {
+        const { kind } = JSON.parse(body || '{}') as { kind?: string };
+        const started = triggerRun(kind === 'leads' ? 'leads' : 'jobs');
+        json(res, started ? 200 : 409, { ok: started, running: runState.running });
+      })
+      .catch((err) => json(res, 400, { ok: false, error: String(err) }));
     return;
   }
 

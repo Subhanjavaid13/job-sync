@@ -46,10 +46,30 @@ export function scoreLead(candidate: LeadCandidate): number {
   return score;
 }
 
-/** Keeps candidates at/above the score threshold, best first. */
+const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+// International-ish phone: optional +, 8–15 digits with common separators.
+const PHONE_RE = /(?:\+|\b)\d[\d\s().-]{7,14}\d\b/g;
+
+/**
+ * Builds the lead's contact line: the source-provided handle/company, plus any
+ * email addresses or phone numbers written in the post itself.
+ */
+export function extractContact(candidate: LeadCandidate): string | undefined {
+  const parts: string[] = [];
+  if (candidate.contact) parts.push(candidate.contact);
+  const emails = [...new Set(candidate.body.match(EMAIL_RE) ?? [])].slice(0, 2);
+  parts.push(...emails);
+  const phones = [...new Set((candidate.body.match(PHONE_RE) ?? []).map((p) => p.trim()))]
+    .filter((p) => p.replace(/\D/g, '').length >= 8)
+    .slice(0, 1);
+  parts.push(...phones);
+  return parts.length > 0 ? parts.join(' · ') : undefined;
+}
+
+/** Keeps candidates at/above the score threshold, best first, with contact resolved. */
 export function filterLeads(candidates: LeadCandidate[]): Array<LeadCandidate & { score: number }> {
   return candidates
-    .map((c) => ({ ...c, score: scoreLead(c) }))
+    .map((c) => ({ ...c, score: scoreLead(c), contact: extractContact(c) }))
     .filter((c) => c.score >= config.leads.minScore)
     .sort((a, b) => b.score - a.score);
 }

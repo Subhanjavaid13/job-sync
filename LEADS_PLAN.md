@@ -93,7 +93,7 @@ AI qualification is a **later** enhancement (see §7) — the rules version ship
 - ✅ **L3 HN source (S3)** — exact-phrase thread discovery + comment search. Verified live; the current month simply has no Shopify mentions (3 "seeking freelancer" comments total) — expect occasional, high-quality hits.
 - ✅ **L4 Leads cron + email** — workflow step in the daily cron (`continue-on-error` so leads never block jobs-state persistence); new leads send a notification email (fail-soft — the portal board is the source of truth).
 - 🔲 **L5 Freelancer.com (S4)** — needs their free API key in `.env`.
-- ✅ **L6 Portal polish (core)** — notes editor + activity dates. Won/lost reporting still open.
+- ✅ **L6 Portal polish** — notes editor, activity dates, won/lost stats strip, and (2026-08-26) a **contact** line per lead: Reddit `u/author` or HN user or the hiring company, plus any email/phone extracted from the post text (`extractContact`). The leads email lists best matches first with contact + snippet. Note: Reddit/HN never expose private emails — when a post has no contact details, the contact is the handle and you reach out via the post link.
 - 🔲 **L7 (optional) New-store detection (S5)** — crt.sh watcher behind `LEADS_STORE_DETECT=1`.
 
 ## 7. AI later (deferred by owner decision, planned)

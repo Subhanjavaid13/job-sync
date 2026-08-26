@@ -27,9 +27,11 @@ export const jsearch: Fetcher = {
       return [];
     }
 
+    // JSearch v5 (2026) replaced /search with /search-v2: `work_from_home`
+    // replaces `remote_jobs_only`, and results live under data.jobs.
     const query = encodeURIComponent(`${config.searchTerms.join(' ')} developer`);
     const res = await fetch(
-      `https://jsearch.p.rapidapi.com/search?query=${query}&remote_jobs_only=true&num_pages=1`,
+      `https://jsearch.p.rapidapi.com/search-v2?query=${query}&work_from_home=true&date_posted=week`,
       {
         headers: {
           'X-RapidAPI-Key': apiKey,
@@ -38,9 +40,10 @@ export const jsearch: Fetcher = {
       },
     );
     if (!res.ok) throw new Error(`jsearch: HTTP ${res.status}`);
-    const data = (await res.json()) as { data?: JSearchJob[] };
+    const payload = (await res.json()) as { data?: { jobs?: JSearchJob[] } | JSearchJob[] };
+    const jobs = Array.isArray(payload.data) ? payload.data : (payload.data?.jobs ?? []);
 
-    return (data.data ?? [])
+    return jobs
       .filter((j) => j.job_id && j.job_title)
       .map((j) => ({
         id: `jsearch:${j.job_id}`,

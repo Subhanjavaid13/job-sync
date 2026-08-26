@@ -33,6 +33,8 @@ export interface Lead {
   url: string;
   source: string;
   budget?: string;
+  /** Who to reach: author handle / company, plus any email or phone found in the post. */
+  contact?: string;
   score: number;
   status: LeadStatus;
   notes?: string;
@@ -51,6 +53,8 @@ export interface LeadCandidate {
   url: string;
   source: string;
   budget?: string;
+  /** Author handle / company name as the source knows it (emails/phones are extracted from body later). */
+  contact?: string;
   postedAt: string | null;
 }
 

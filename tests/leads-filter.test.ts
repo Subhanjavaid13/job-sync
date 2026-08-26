@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scoreLead, filterLeads, stripHtml } from '../src/leads/filter.js';
+import { scoreLead, filterLeads, stripHtml, extractContact } from '../src/leads/filter.js';
 import { config } from '../src/config.js';
 import type { LeadCandidate } from '../src/types.js';
 
@@ -67,6 +67,18 @@ test('filterLeads applies the threshold and sorts best first', () => {
   const kept = filterLeads([zero, strong]);
   assert.deepEqual(kept.map((l) => l.id), ['s']);
   assert.ok(kept[0]!.score >= config.leads.minScore);
+});
+
+test('extractContact combines the handle with emails/phones found in the post', () => {
+  const c = lead({
+    contact: 'Reddit u/merchant42',
+    body: 'Need a Shopify dev. Email me at owner@shop.example or WhatsApp +92 300 1234567. Budget $2k.',
+  });
+  const contact = extractContact(c) ?? '';
+  assert.ok(contact.startsWith('Reddit u/merchant42'));
+  assert.ok(contact.includes('owner@shop.example'));
+  assert.ok(contact.includes('+92 300 1234567'));
+  assert.equal(extractContact(lead({ body: 'no contact details here' })), undefined);
 });
 
 test('stripHtml flattens tags and entities', () => {

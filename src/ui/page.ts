@@ -117,7 +117,8 @@ export const pageHtml = `<!doctype html>
   .chip-score { background: var(--primary-soft); color: var(--primary-dark); }
   .chip-salary { background: var(--amber-bg); color: var(--amber-ink); font-weight: 600; }
   .st-ok { color: var(--good); } .st-failed { color: var(--critical); } .st-running { color: var(--running); }
-  .chip-sample { border: 1px dashed var(--baseline); color: var(--muted); background: none; font-weight: 600; letter-spacing: .04em; }
+  .lead .contact { font-size: 12.5px; color: var(--secondary); margin-bottom: 8px; word-break: break-word; }
+  .lead .contact-label { color: var(--muted); }
 
   .filters { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   input[type="search"], select {
@@ -241,21 +242,21 @@ export const pageHtml = `<!doctype html>
   </section>
 
   <section id="tab-leads" hidden>
-    <div class="banner" id="leadsBanner" hidden>
-      Showing <strong>sample preview data</strong> — the leads pipeline interface is ready, its data sources land next
-      (see LEADS_PLAN.md: Reddit hiring posts, HN freelance threads, contract roles from the job sources, Freelancer.com).
-      Status changes on samples are not saved.
-    </div>
     <div class="lead-stats" id="leadStats"></div>
     <div class="board" id="leadsBoard"></div>
   </section>
 
   <section id="tab-run" hidden>
     <div class="card">
-      <h2>Run the pipeline</h2>
-      <p class="sub">fetch all sources → filter → dedupe → digest. The GitHub Actions cron also runs this every 2 hours in the cloud.</p>
+      <h2>Run a pipeline on this computer</h2>
+      <p class="sub">
+        <strong>Jobs:</strong> fetch all 7 sources → filter + score → skip everything already seen → email you the new matches → save.
+        <strong>Leads:</strong> search Reddit + Hacker News for people hiring Shopify developers → intent score → add to the board → email you the best ones.
+        The cloud runs both automatically at 08:00 and 18:00 Pakistan time; use these buttons to check in between.
+      </p>
       <div class="runmeta">
-        <button id="runBtn" class="btn btn-primary">Run pipeline now</button>
+        <button id="runBtn" class="btn btn-primary">Run jobs now</button>
+        <button id="runLeadsBtn" class="btn btn-ghost">Run leads now</button>
         <span id="runInfo" class="chip"></span>
       </div>
       <pre class="term" id="runLog">No run triggered from the dashboard yet.</pre>
@@ -463,8 +464,6 @@ export const pageHtml = `<!doctype html>
   ];
   function loadLeads() {
     getJSON('/api/leads').then(function (d) {
-      $('#leadsBanner').hidden = !d.sample;
-
       // Won/lost reporting strip
       var won = d.leads.filter(function (l) { return l.status === 'won'; }).length;
       var lost = d.leads.filter(function (l) { return l.status === 'lost'; }).length;
@@ -506,10 +505,21 @@ export const pageHtml = `<!doctype html>
           } else t.textContent = l.title;
           card.appendChild(t);
           if (l.summary) card.appendChild(el('div', 's', l.summary));
+          if (l.contact) {
+            var ct = el('div', 'contact');
+            ct.appendChild(el('span', 'contact-label', 'Contact: '));
+            // Emails become mailto links; everything else stays plain text.
+            l.contact.split(' \\u00B7 ').forEach(function (part, i) {
+              if (i > 0) ct.appendChild(document.createTextNode(' \\u00B7 '));
+              if (/^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(part)) {
+                var m = el('a', null, part); m.href = 'mailto:' + part; ct.appendChild(m);
+              } else ct.appendChild(document.createTextNode(part));
+            });
+            card.appendChild(ct);
+          }
           var meta = el('div', 'meta');
           if (l.status === 'won') meta.appendChild(el('span', 'chip st-ok', '\\u25CF won'));
           else if (l.status === 'lost') meta.appendChild(el('span', 'chip st-failed', '\\u2715 lost'));
-          if (d.sample) meta.appendChild(el('span', 'chip chip-sample', 'SAMPLE'));
           if (l.source) meta.appendChild(el('span', 'chip chip-source', l.source));
           if (l.budget) meta.appendChild(el('span', 'chip chip-salary', l.budget));
           meta.appendChild(el('span', 'date', fmtDate(l.posted_at)));
@@ -535,7 +545,7 @@ export const pageHtml = `<!doctype html>
           var save = el('button', 'btn btn-ghost btn-sm', 'Save note');
           save.addEventListener('click', function () {
             postJSON('/api/leads/notes', { id: l.id, notes: ta.value }).then(function (r) {
-              save.textContent = r.sample ? 'Not saved (sample)' : 'Saved \\u2713';
+              save.textContent = r.ok ? 'Saved \\u2713' : 'Not saved';
               setTimeout(function () { save.textContent = 'Save note'; }, 1600);
             });
           });
@@ -553,7 +563,7 @@ export const pageHtml = `<!doctype html>
   /* ---------- run ---------- */
   var pollTimer = null;
   function renderRun(s) {
-    var runBtns = [$('#runBtn'), $('#topRunBtn')];
+    var runBtns = [$('#runBtn'), $('#runLeadsBtn'), $('#topRunBtn')];
     runBtns.forEach(function (b) { b.disabled = s.running; });
     var info = $('#runInfo');
     var top = $('#topStatus');
@@ -588,11 +598,12 @@ export const pageHtml = `<!doctype html>
       }
     });
   }
-  function triggerRun() {
-    postJSON('/api/run').then(function () { showTab('run'); pollRun(true); pollRun(false); });
+  function triggerRun(kind) {
+    postJSON('/api/run', { kind: kind || 'jobs' }).then(function () { showTab('run'); pollRun(true); pollRun(false); });
   }
-  $('#runBtn').addEventListener('click', triggerRun);
-  $('#topRunBtn').addEventListener('click', triggerRun);
+  $('#runBtn').addEventListener('click', function () { triggerRun('jobs'); });
+  $('#runLeadsBtn').addEventListener('click', function () { triggerRun('leads'); });
+  $('#topRunBtn').addEventListener('click', function () { triggerRun('jobs'); });
 
   /* ---------- boot ---------- */
   var initial = (location.hash || '#overview').slice(1);

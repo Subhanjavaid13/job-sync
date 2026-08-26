@@ -22,12 +22,22 @@ async function searchSubreddit(parser: Parser, sub: string): Promise<LeadCandida
     // Post id from the permalink (/comments/<id>/...), falling back to the URL.
     const idMatch = item.link.match(/\/comments\/([a-z0-9]+)\//i);
     const externalId = idMatch ? idMatch[1] : item.link;
+    // Atom <author><name>/u/xyz</name> — rss-parser exposes it as creator or author.
+    const raw = item as Record<string, unknown>;
+    const authorRaw = raw.creator ?? raw.author;
+    const author =
+      typeof authorRaw === 'string'
+        ? authorRaw
+        : authorRaw && typeof authorRaw === 'object' && 'name' in authorRaw
+          ? String((authorRaw as { name: unknown }).name)
+          : '';
     leads.push({
       id: `reddit:${externalId}`,
       title: item.title,
       body: `${item.title}\n${stripHtml(item.content ?? item.contentSnippet ?? '')}`,
       url: item.link,
       source: `r/${sub}`,
+      contact: author ? `Reddit ${author.startsWith('/u/') ? author : `u/${author.replace(/^u\//, '')}`}` : undefined,
       postedAt: item.isoDate ?? null,
     });
   }

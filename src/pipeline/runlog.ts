@@ -3,6 +3,13 @@ import { openDb } from './db.js';
 /** Opens a run row; the dashboard's Runs table is built from these. */
 export function startRun(kind: 'jobs' | 'leads' = 'jobs'): number {
   const db = openDb();
+  // A run killed mid-way (Ctrl+C, machine off) never reaches finishRun and
+  // would show as "running" forever — close such rows out as interrupted.
+  const staleCutoff = new Date(Date.now() - 2 * 3_600_000).toISOString();
+  db.prepare(
+    `UPDATE runs SET status = 'failed', finished_at = ?, error = 'interrupted (never finished)'
+     WHERE status = 'running' AND started_at < ?`,
+  ).run(new Date().toISOString(), staleCutoff);
   const { lastInsertRowid } = db
     .prepare(`INSERT INTO runs (started_at, status, kind) VALUES (?, 'running', ?)`)
     .run(new Date().toISOString(), kind);

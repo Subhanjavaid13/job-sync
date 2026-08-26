@@ -20,8 +20,8 @@ export function insertNewLeads(
   );
   const insert = db.prepare(`
     INSERT OR IGNORE INTO leads
-      (id, title, summary, url, source, budget, score, status, posted_at, first_seen, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
+      (id, title, summary, url, source, budget, contact, score, status, posted_at, first_seen, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
   `);
 
   const now = new Date().toISOString();
@@ -37,6 +37,7 @@ export function insertNewLeads(
       lead.url,
       lead.source,
       lead.budget ?? null,
+      lead.contact ?? null,
       lead.score,
       lead.postedAt,
       now,

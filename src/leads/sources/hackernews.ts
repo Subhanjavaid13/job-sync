@@ -8,6 +8,7 @@ interface AlgoliaHit {
   comment_text?: string;
   story_id?: number;
   created_at?: string;
+  author?: string;
 }
 
 const API = 'https://hn.algolia.com/api/v1';
@@ -53,6 +54,7 @@ export const hackernews: LeadFetcher = {
           body: text,
           url: `https://news.ycombinator.com/item?id=${hit.objectID}`,
           source: 'hackernews',
+          contact: hit.author ? `HN user ${hit.author}` : undefined,
           postedAt: hit.created_at ?? null,
         });
       }

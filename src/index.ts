@@ -5,7 +5,7 @@ import { filterJobs, splitContractRoles } from './pipeline/filter.js';
 import { selectNewJobs, markSeen, pruneSeenJobs } from './pipeline/dedupe.js';
 import { sendDigest } from './pipeline/email.js';
 import { startRun, finishRun } from './pipeline/runlog.js';
-import { scoreLead, stripHtml } from './leads/filter.js';
+import { scoreLead, stripHtml, extractContact } from './leads/filter.js';
 import { insertNewLeads } from './leads/store.js';
 
 async function main(): Promise<void> {
@@ -38,11 +38,16 @@ async function main(): Promise<void> {
         url: job.url,
         source: 'contract-role',
         budget: job.salary,
+        contact: job.company,
         postedAt: job.postedAt,
       }));
       const stored = insertNewLeads(
         // Already passed the jobs filter ⇒ relevant; floor at minScore so they always store.
-        candidates.map((c) => ({ ...c, score: Math.max(scoreLead(c), config.leads.minScore) })),
+        candidates.map((c) => ({
+          ...c,
+          score: Math.max(scoreLead(c), config.leads.minScore),
+          contact: extractContact(c),
+        })),
       );
       if (stored.length > 0) {
         console.log(`[job-sync] routed ${stored.length} contract-type matches to leads`);

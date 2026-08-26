@@ -76,6 +76,14 @@ export function openDb(): DatabaseSync {
     db.exec(`ALTER TABLE runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'jobs'`);
   }
 
+  // Additive migration: leads gained a contact column (author/company + extracted email/phone).
+  const leadCols = new Set(
+    (db.prepare('PRAGMA table_info(leads)').all() as Array<{ name: string }>).map((c) => c.name),
+  );
+  if (!leadCols.has('contact')) {
+    db.exec('ALTER TABLE leads ADD COLUMN contact TEXT');
+  }
+
   return db;
 }
 

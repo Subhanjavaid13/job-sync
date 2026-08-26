@@ -2,9 +2,10 @@ name: job-sync
 
 on:
   schedule:
-    # Once daily at 03:00 UTC = 08:00 Pakistan (GMT+5). GitHub cron may drift
-    # 5–15 min. Both funnels (jobs + leads) run in this one daily slot.
-    - cron: '0 3 * * *'
+    # Twice daily — 03:00 UTC (08:00 Pakistan) and 13:00 UTC (18:00 Pakistan),
+    # so a job posted during the day is caught the same day. Each run emails at
+    # most ONE digest, and only when there is something new. Cron may drift 5–15 min.
+    - cron: '0 3,13 * * *'
   workflow_dispatch: {} # manual "Run workflow" button — run anytime on demand
 
 permissions:
@@ -45,9 +46,16 @@ jobs:
 
       - name: Run leads pipeline
         # Failures here must never block persisting the jobs dedupe state
-        # below — hence continue-on-error.
+        # below — hence continue-on-error. SMTP env is needed for the leads email.
         continue-on-error: true
         run: npm run leads
+        env:
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
 
       - name: Email failure alert
         if: failure()
